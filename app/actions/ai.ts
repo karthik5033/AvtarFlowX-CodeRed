@@ -11,7 +11,7 @@ export const generateChatResponse = async (history: { role: "user" | "model"; pa
   try {
     return await withRetry(
       {
-        model: "gemini-2.0-flash",
+        model: "gemini-2.5-flash",
         systemInstruction: `
             You are an expert Frontend AI that builds React+Tailwind apps based on FLOWCHARTS.
     You will receive a compressed format called TOON:
@@ -60,7 +60,7 @@ export const generateAppBoilerplate = async (flowData: any) => {
 
   try {
     return await withRetry(
-      { model: "gemini-2.0-flash" },
+      { model: "gemini-2.5-flash" },
       async (model) => {
         const prompt = `
     You are an expert React/Next.js developer.
@@ -243,7 +243,7 @@ export const suggestImage = async (query: string) => {
 
   try {
     return await withRetry(
-      { model: "gemini-2.0-flash" },
+      { model: "gemini-2.5-flash" },
       async (model) => {
         const prompt = `
         You are an image search assistant.
@@ -270,7 +270,7 @@ export const generateFlowFromImage = async (base64Image: string) => {
 
   try {
     return await withRetry(
-      { model: "gemini-2.0-flash" },
+      { model: "gemini-2.5-flash" },
       async (model) => {
         const prompt = `
         Analyze this flowchart/diagram image and extract the nodes and edges into a JSON format compatible with React Flow.
@@ -333,7 +333,7 @@ export const suggestImprovements = async (code: string) => {
 
   try {
     return await withRetry(
-      { model: "gemini-2.0-flash" },
+      { model: "gemini-2.5-flash" },
       async (model) => {
         const prompt = `
         Analyze the following React component code and suggest 20 specific, high-impact improvements or features.
@@ -363,7 +363,7 @@ export const editReactComponent = async (code: string, userPrompt: string) => {
 
   try {
     return await withRetry(
-      { model: "gemini-2.0-flash" },
+      { model: "gemini-2.5-flash" },
       async (model) => {
         const prompt = `
         You are a Senior React Engineer.

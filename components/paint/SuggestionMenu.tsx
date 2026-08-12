@@ -103,7 +103,7 @@ export default function SuggestionMenu({ position, onSelect, onClose, context = 
             {/* Header / AI Input */}
             <div className="bg-white p-3 border-b border-gray-100">
                 <div className="relative flex items-center">
-                    <Sparkles className={`w-4 h-4 absolute left-3 ${query.length > 0 ? "text-indigo-600 animate-pulse" : "text-gray-400"}`} />
+                    <Sparkles className={`w-4 h-4 absolute left-3 ${query.length > 0 ? "text-primary animate-pulse" : "text-gray-400"}`} />
                     <input
                         ref={inputRef}
                         type="text"
@@ -111,11 +111,11 @@ export default function SuggestionMenu({ position, onSelect, onClose, context = 
                         onChange={(e) => setQuery(e.target.value)}
                         onKeyDown={handleKeyDown}
                         placeholder="Ask AI or search actions..."
-                        className="w-full pl-9 pr-3 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500/50 transition-all placeholder:text-gray-400 text-gray-800"
+                        className="w-full pl-9 pr-3 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all placeholder:text-gray-400 text-gray-800"
                     />
                 </div>
                 {query.length > 0 && (
-                    <div className="mt-2 flex items-center gap-2 text-[10px] text-indigo-600 font-medium px-1">
+                    <div className="mt-2 flex items-center gap-2 text-[10px] text-primary font-medium px-1">
                         <Command className="w-3 h-3" />
                         <span>Press Enter to generate node from prompt</span>
                     </div>
@@ -134,9 +134,9 @@ export default function SuggestionMenu({ position, onSelect, onClose, context = 
                             <button
                                 key={rec}
                                 onClick={() => onSelect(rec)}
-                                className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-indigo-50 hover:text-indigo-700 rounded-md flex items-center gap-2 transition-colors border border-transparent hover:border-indigo-100"
+                                className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-primary/10 hover:text-primary rounded-md flex items-center gap-2 transition-colors border border-transparent hover:border-primary/20"
                             >
-                                <span className="w-1.5 h-1.5 rounded-full bg-indigo-500"></span>
+                                <span className="w-1.5 h-1.5 rounded-full bg-primary"></span>
                                 {rec}
                             </button>
                         ))}
@@ -149,8 +149,8 @@ export default function SuggestionMenu({ position, onSelect, onClose, context = 
                 </div>
 
                 {filteredActions.length === 0 && query.length > 0 && (
-                    <button onClick={() => onSelect(`AI_PROMPT:${query}`)} className="w-full text-left px-3 py-3 text-sm text-gray-600 hover:bg-indigo-50 rounded-md border border-dashed border-gray-300 hover:border-indigo-300 flex items-center gap-3">
-                        <Sparkles className="w-4 h-4 text-indigo-500" />
+                    <button onClick={() => onSelect(`AI_PROMPT:${query}`)} className="w-full text-left px-3 py-3 text-sm text-gray-600 hover:bg-primary/5 rounded-md border border-dashed border-gray-300 hover:border-primary/30 flex items-center gap-3">
+                        <Sparkles className="w-4 h-4 text-primary" />
                         <span>Generate "<strong>{query}</strong>" with AI</span>
                     </button>
                 )}

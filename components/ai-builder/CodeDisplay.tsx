@@ -89,7 +89,7 @@ export default function CodeDisplay({ files, structure, onCodeChange, onExpandCh
             case 'tsx':
                 return <FileCode className="w-4 h-4 text-blue-400" />;
             case 'css':
-                return <FileCode className="w-4 h-4 text-purple-400" />;
+                return <FileCode className="w-4 h-4 text-primary" />;
             case 'javascript':
             case 'typescript':
                 return <FileJson className="w-4 h-4 text-yellow-400" />;
@@ -241,7 +241,7 @@ export default function CodeDisplay({ files, structure, onCodeChange, onExpandCh
                                         variant="outline"
                                         size="sm"
                                         onClick={handleDownloadAll}
-                                        className="bg-purple-600 border-purple-500 hover:bg-purple-700 hover:border-purple-600 text-white transition-all h-7 px-2"
+                                        className="bg-primary border-primary hover:bg-primary/90 hover:border-primary text-primary-foreground transition-all h-7 px-2"
                                         title="Download all files as ZIP"
                                     >
                                         📦

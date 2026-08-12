@@ -54,7 +54,7 @@ export default function NodeEditorModal({ open, node, onClose, onSave, onDelete 
               type="text"
               value={label}
               onChange={(e) => setLabel(e.target.value)}
-              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-medium text-gray-800"
+              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-medium text-gray-800"
               placeholder="e.g. Send Email"
               autoFocus
             />
@@ -66,7 +66,7 @@ export default function NodeEditorModal({ open, node, onClose, onSave, onDelete 
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-gray-600 min-h-[80px]"
+              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-gray-600 min-h-[80px]"
               placeholder="Add details about this step..."
             />
           </div>
@@ -79,7 +79,7 @@ export default function NodeEditorModal({ open, node, onClose, onSave, onDelete 
                 <button
                   key={c.value}
                   onClick={() => setColor(c.value)}
-                  className={`w-8 h-8 rounded-full border transition-all ${color === c.value ? 'ring-2 ring-indigo-500 ring-offset-2 border-gray-300' : 'border-gray-200 hover:scale-110'}`}
+                  className={`w-8 h-8 rounded-full border transition-all ${color === c.value ? 'ring-2 ring-primary ring-offset-2 border-gray-300' : 'border-gray-200 hover:scale-110'}`}
                   style={{ backgroundColor: c.value }}
                   title={c.label}
                 />
@@ -112,7 +112,7 @@ export default function NodeEditorModal({ open, node, onClose, onSave, onDelete 
               onClick={() => {
                 onSave({ label, description, color });
               }}
-              className="px-4 py-2 text-xs font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-sm shadow-indigo-200 transition-colors"
+              className="px-4 py-2 text-xs font-medium text-primary-foreground bg-primary hover:bg-primary/90 rounded-lg shadow-sm shadow-primary/20 transition-colors"
             >
               Save Changes
             </button>

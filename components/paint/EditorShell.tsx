@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { Node, Edge, ReactFlowInstance } from "reactflow";
-import { Play, Search, Settings, ChevronRight, ChevronDown, Monitor, Smartphone, Maximize2, Plus, Undo, Redo, Wand2, Sparkles, Bot } from "lucide-react";
+import { Play, Search, Settings, ChevronRight, ChevronDown, Monitor, Smartphone, Maximize2, Plus, Undo, Redo, Wand2, Sparkles } from "lucide-react";
 import Link from "next/link";
 
 import FlowCanvas from "./FlowCanvas";
@@ -10,10 +10,11 @@ import NodeEditorModal from "./NodeEditorModal";
 import PreviewPane from "./PreviewPane";
 import SuggestionMenu from "./SuggestionMenu";
 import AIChatPanel from "./AIChatPanel";
+import dagre from "dagre";
 
 import { toTOON } from "../../utils/toon";
 import { generateAppBoilerplate, generateFlowFromImage } from "../../app/actions/ai";
-import { PanelResizeHandle, Panel, PanelGroup } from "react-resizable-panels";
+import { PanelResizeHandle, Panel, PanelGroup, ImperativePanelHandle } from "react-resizable-panels";
 import { Upload } from "lucide-react";
 import { useHistory } from "@/hooks/useHistory";
 
@@ -59,6 +60,10 @@ export default function EditorShell() {
     // File Input Ref
     const fileInputRef = React.useRef<HTMLInputElement>(null);
 
+    // Panel Refs for layout toggle
+    const leftPanelRef = React.useRef<ImperativePanelHandle>(null);
+    const rightPanelRef = React.useRef<ImperativePanelHandle>(null);
+
     /* 🔹 ReactFlow Instance for fitView control */
     const [reactFlowInstance, setReactFlowInstance] = useState<ReactFlowInstance | null>(null);
 
@@ -71,52 +76,19 @@ export default function EditorShell() {
             id: "start-trigger",
             type: "default",
             position: { x: 100, y: 100 },
-            data: { label: "Input Node (Form)" },
-            style: {
-                width: 240,
-                backgroundColor: "#ffffff",
-                borderColor: "#e2e8f0",
-                borderRadius: "8px",
-                padding: "16px",
-                boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-                color: "#1e293b",
-                fontWeight: "500",
-                fontSize: "14px"
-            },
+            data: { label: "Input Node (Form)" }
         },
         {
             id: "ai-logic",
             type: "default",
             position: { x: 400, y: 100 },
-            data: { label: "AI Logic Node" },
-            style: {
-                width: 240,
-                backgroundColor: "#ffffff",
-                borderColor: "#e2e8f0",
-                borderRadius: "8px",
-                padding: "16px",
-                boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-                color: "#1e293b",
-                fontWeight: "500",
-                fontSize: "14px"
-            },
+            data: { label: "AI Logic Node" }
         },
         {
             id: "output-node",
             type: "default",
             position: { x: 700, y: 100 },
-            data: { label: "Output Node (Result)" },
-            style: {
-                width: 240,
-                backgroundColor: "#ffffff",
-                borderColor: "#e2e8f0",
-                borderRadius: "8px",
-                padding: "16px",
-                boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-                color: "#1e293b",
-                fontWeight: "500",
-                fontSize: "14px"
-            },
+            data: { label: "Output Node (Result)" }
         }
     ]);
     const [edges, setEdges] = useState<Edge[]>([
@@ -226,18 +198,7 @@ export default function EditorShell() {
             id: `node-${Date.now()}`,
             type: "default",
             position: { x: 250, y: 250 },
-            data: { label },
-            style: {
-                width: 240,
-                backgroundColor: "#ffffff",
-                borderColor: "#e2e8f0",
-                borderRadius: "8px",
-                padding: "16px",
-                boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-                color: "#1e293b",
-                fontWeight: "500",
-                fontSize: "14px"
-            }
+            data: { label }
         };
         setNodes((nds) => [...nds, newNode]);
         return newNode;
@@ -342,38 +303,31 @@ export default function EditorShell() {
     };
 
     return (
-        <div className="flex flex-col h-screen w-full bg-white text-slate-900 font-sans">
+        <div className="flex flex-col h-screen w-full bg-background text-foreground font-sans">
 
             {/* ---------------- GLOBAL HEADER ---------------- */}
-            <header className="h-16 px-6 border-b border-gray-100 flex items-center justify-between bg-white/90 backdrop-blur-md z-50 sticky top-0">
+            <header className="h-16 px-6 border-b border-border flex items-center justify-between bg-background/90 backdrop-blur-md z-50 sticky top-0">
                 {/* 1. BRAND */}
                 <div className="flex flex-col w-48">
-                    <h1 className="text-lg font-bold tracking-tight text-slate-900 flex items-center gap-2">
+                    <h1 className="text-lg font-bold tracking-tight flex items-center gap-2">
                         AvatarFlowX
-                        <span className="px-1.5 py-0.5 rounded-md bg-purple-100 text-purple-700 text-[10px] uppercase font-bold tracking-wider">Builder</span>
+                        <span className="px-1.5 py-0.5 rounded-md bg-primary/20 text-primary text-[10px] uppercase font-bold tracking-wider">Builder</span>
                     </h1>
                 </div>
 
                 {/* 2. CENTER NAVIGATION */}
-                <div className="flex items-center p-1 bg-slate-100/50 rounded-xl border border-slate-200/60">
+                <div className="flex items-center p-1 bg-muted/50 rounded-xl border border-border">
                     <Link href="/visual-builder">
-                        <button className="px-4 py-1.5 text-sm font-medium text-slate-700 rounded-lg hover:bg-white hover:shadow-sm transition-all flex items-center gap-2">
+                        <button className="px-4 py-1.5 text-sm font-medium text-muted-foreground rounded-lg hover:bg-background hover:text-foreground hover:shadow-sm transition-all flex items-center gap-2">
                             <Wand2 className="w-3.5 h-3.5" />
                             Visual
                         </button>
                     </Link>
-                    <div className="w-px h-4 bg-slate-300 mx-1"></div>
+                    <div className="w-px h-4 bg-border mx-1"></div>
                     <Link href="/ai-builder">
-                        <button className="px-4 py-1.5 text-sm font-medium text-slate-700 rounded-lg hover:bg-white hover:shadow-sm transition-all flex items-center gap-2">
+                        <button className="px-4 py-1.5 text-sm font-medium text-muted-foreground rounded-lg hover:bg-background hover:text-foreground hover:shadow-sm transition-all flex items-center gap-2">
                             <Sparkles className="w-3.5 h-3.5" />
                             AI Architect
-                        </button>
-                    </Link>
-                    <div className="w-px h-4 bg-slate-300 mx-1"></div>
-                    <Link href="/interview">
-                        <button className="px-4 py-1.5 text-sm font-medium text-pink-700 bg-pink-50/50 rounded-lg hover:bg-white hover:shadow-sm transition-all flex items-center gap-2">
-                            <Bot className="w-3.5 h-3.5" />
-                            Avatar Studio
                         </button>
                     </Link>
                 </div>
@@ -381,36 +335,60 @@ export default function EditorShell() {
                 {/* 3. ACTIONS TOOLBAR */}
                 <div className="flex items-center gap-3 w-48 justify-end">
                     {/* History Group */}
-                    <div className="flex items-center bg-slate-50 border border-slate-200 rounded-lg p-0.5">
+                    <div className="flex items-center bg-muted/30 border border-border rounded-lg p-0.5">
                         <button
                             onClick={handleUndo}
                             disabled={!canUndo}
                             title="Undo (Ctrl+Z)"
-                            className="p-2 hover:bg-white rounded-md transition-all disabled:opacity-30"
+                            className="p-2 hover:bg-background rounded-md transition-all disabled:opacity-30"
                         >
-                            <Undo className="w-4 h-4 text-slate-600" />
+                            <Undo className="w-4 h-4 text-muted-foreground" />
                         </button>
-                        <div className="w-px h-3 bg-slate-300 mx-0.5"></div>
+                        <div className="w-px h-3 bg-border mx-0.5"></div>
                         <button
                             onClick={handleRedo}
                             disabled={!canRedo}
                             title="Redo (Ctrl+Shift+Z)"
-                            className="p-2 hover:bg-white rounded-md transition-all disabled:opacity-30"
+                            className="p-2 hover:bg-background rounded-md transition-all disabled:opacity-30"
                         >
-                            <Redo className="w-4 h-4 text-slate-600" />
+                            <Redo className="w-4 h-4 text-muted-foreground" />
                         </button>
                     </div>
 
-                    <div className="h-6 w-px bg-slate-200"></div>
+                    <div className="h-6 w-px bg-border"></div>
+
+                    {/* Toggle Left Sidebar */}
+                    <button
+                        onClick={() => {
+                            if (leftPanelRef.current?.isExpanded()) {
+                                leftPanelRef.current?.collapse();
+                            } else {
+                                leftPanelRef.current?.expand();
+                            }
+                        }}
+                        className="p-2 rounded-lg transition-colors border text-muted-foreground hover:text-foreground hover:bg-muted border-transparent"
+                        title="Toggle Sidebar"
+                    >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h7" />
+                        </svg>
+                    </button>
 
                     {/* Toggle Preview */}
                     <button
-                        onClick={() => setActiveRightTab(activeRightTab === 'preview' ? 'database' : 'preview')}
+                        onClick={() => {
+                            if (activeRightTab !== 'preview') setActiveRightTab('preview');
+                            if (!rightPanelRef.current?.isExpanded()) {
+                                rightPanelRef.current?.expand();
+                            } else if (activeRightTab === 'preview') {
+                                rightPanelRef.current?.collapse();
+                            }
+                        }}
                         className={`p-2 rounded-lg transition-colors border ${activeRightTab === 'database'
-                            ? 'bg-purple-50 text-purple-700 border-purple-200'
-                            : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50 border-transparent'
+                            ? 'bg-primary/10 text-primary border-primary/20'
+                            : 'text-muted-foreground hover:text-foreground hover:bg-muted border-transparent'
                             }`}
-                        title={activeRightTab === 'database' ? 'Show Preview' : 'Show Database'}
+                        title="Toggle Preview"
                     >
                         <Monitor className="w-4 h-4" />
                     </button>
@@ -422,6 +400,10 @@ export default function EditorShell() {
                             try {
                                 setIsGenerating(true);
                                 setActiveRightTab('preview');
+                                // Collapse left, expand right
+                                leftPanelRef.current?.collapse();
+                                rightPanelRef.current?.expand();
+                                
                                 const toonData = toTOON(nodes, edges);
                                 const code = await generateAppBoilerplate(toonData);
                                 setGeneratedCode(code);
@@ -432,9 +414,9 @@ export default function EditorShell() {
                             }
                         }}
                         disabled={isGenerating}
-                        className="px-4 py-2 text-sm font-bold text-white bg-slate-900 rounded-lg hover:bg-slate-800 transition-all shadow-md hover:shadow-lg flex items-center gap-2"
+                        className="px-4 py-2 text-sm font-bold text-primary-foreground bg-primary rounded-lg hover:bg-primary/90 transition-all shadow-md hover:shadow-lg flex items-center gap-2"
                     >
-                        {isGenerating ? <div className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" /> : <Play className="w-4 h-4 fill-current" />}
+                        {isGenerating ? <div className="w-4 h-4 rounded-full border-2 border-primary-foreground/30 border-t-primary-foreground animate-spin" /> : <Play className="w-4 h-4 fill-current" />}
                         Run
                     </button>
                 </div>
@@ -443,32 +425,32 @@ export default function EditorShell() {
             {/* ---------------- MAIN CONTENT ---------------- */}
             <div className="flex-1 overflow-hidden">
                 {!mounted ? (
-                    <div className="flex items-center justify-center h-full bg-slate-50">
-                        <div className="animate-spin w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full"></div>
+                    <div className="flex items-center justify-center h-full bg-background">
+                        <div className="animate-spin w-6 h-6 border-2 border-primary border-t-transparent rounded-full"></div>
                     </div>
                 ) : (
                     <PanelGroup direction="horizontal">
                         {/* ---------------- LEFT SIDEBAR ---------------- */}
-                        <Panel defaultSize={28} minSize={15} maxSize={35} className="flex flex-col bg-gradient-to-b from-slate-50 to-white border-r border-slate-200">
+                        <Panel ref={leftPanelRef} defaultSize={25} minSize={15} maxSize={35} collapsible={true} className="flex flex-col bg-muted/10 border-r border-border">
                             <div className="flex-1 overflow-y-auto p-6 custom-scrollbar">
 
                                 {/* Flow Builder Intro */}
-                                <div className="mb-8 p-4 bg-gradient-to-r from-purple-50 to-indigo-50 rounded-xl border border-purple-100 shadow-sm">
-                                    <h2 className="text-base font-bold text-slate-900 mb-2 flex items-center gap-2">
-                                        <svg className="w-5 h-5 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <div className="mb-8 p-4 bg-card rounded-xl border border-border shadow-sm">
+                                    <h2 className="text-base font-bold mb-2 flex items-center gap-2">
+                                        <svg className="w-5 h-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM14 5a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 16a1 1 0 011-1h4a1 1 0 011 1v3a1 1 0 01-1 1H5a1 1 0 01-1-1v-3zM14 16a1 1 0 011-1h4a1 1 0 011 1v3a1 1 0 01-1 1h-4a1 1 0 01-1-1v-3z" />
                                         </svg>
                                         Workflow Builder
                                     </h2>
-                                    <p className="text-sm text-slate-600 leading-relaxed">Select components to build your app logic.</p>
+                                    <p className="text-sm text-muted-foreground leading-relaxed">Select components to build your app logic.</p>
                                 </div>
 
                                 {/* Common Workflows - Accordion Style */}
                                 <div className="mb-6">
                                     <div className="flex items-center gap-2 mb-4">
-                                        <div className="h-px flex-1 bg-gradient-to-r from-transparent via-slate-300 to-transparent"></div>
-                                        <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wider px-2">Common Workflows</h3>
-                                        <div className="h-px flex-1 bg-gradient-to-r from-transparent via-slate-300 to-transparent"></div>
+                                        <div className="h-px flex-1 bg-gradient-to-r from-transparent via-border to-transparent"></div>
+                                        <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider px-2">Common Workflows</h3>
+                                        <div className="h-px flex-1 bg-gradient-to-r from-transparent via-border to-transparent"></div>
                                     </div>
                                     <div className="space-y-2">
                                         {[
@@ -561,35 +543,35 @@ export default function EditorShell() {
                                                 ]
                                             }
                                         ].map((group, groupIndex) => (
-                                            <div key={groupIndex} className="border border-slate-200 rounded-lg overflow-hidden bg-white shadow-sm hover:shadow-md transition-all">
+                                            <div key={groupIndex} className="border border-border rounded-lg overflow-hidden bg-card shadow-sm hover:shadow-md transition-all">
                                                 {/* Category Header - Clickable */}
                                                 <button
                                                     onClick={() => setExpandedWorkflow(expandedWorkflow === group.category ? null : group.category)}
                                                     className={`w-full flex items-center justify-between p-4 transition-all ${expandedWorkflow === group.category
-                                                        ? 'bg-gradient-to-r from-purple-50 to-indigo-50'
-                                                        : 'hover:bg-slate-50'
+                                                        ? 'bg-muted/50'
+                                                        : 'hover:bg-muted/30'
                                                         }`}
                                                 >
                                                     <div className="flex items-center gap-3">
                                                         <div className={`w-9 h-9 rounded-lg flex items-center justify-center text-lg shadow-sm transition-all ${expandedWorkflow === group.category
-                                                            ? 'bg-gradient-to-br from-purple-500 to-indigo-500 scale-110'
-                                                            : 'bg-gradient-to-br from-slate-100 to-slate-200'
+                                                            ? 'bg-primary text-primary-foreground scale-110'
+                                                            : 'bg-muted text-muted-foreground'
                                                             }`}>
                                                             {group.icon}
                                                         </div>
-                                                        <span className={`font-semibold text-sm transition-colors ${expandedWorkflow === group.category ? 'text-purple-700' : 'text-slate-700'
+                                                        <span className={`font-semibold text-sm transition-colors ${expandedWorkflow === group.category ? 'text-primary' : 'text-foreground'
                                                             }`}>{group.category}</span>
                                                     </div>
                                                     {expandedWorkflow === group.category ? (
-                                                        <ChevronDown className="w-4 h-4 text-purple-500" />
+                                                        <ChevronDown className="w-4 h-4 text-primary" />
                                                     ) : (
-                                                        <ChevronRight className="w-4 h-4 text-slate-400" />
+                                                        <ChevronRight className="w-4 h-4 text-muted-foreground" />
                                                     )}
                                                 </button>
 
                                                 {/* Workflows - Shown when expanded */}
                                                 {expandedWorkflow === group.category && (
-                                                    <div className="border-t border-slate-200 p-3 space-y-2 bg-gradient-to-b from-slate-50/50 to-white">
+                                                    <div className="border-t border-border p-3 space-y-2 bg-muted/10">
                                                         {group.workflows.map((item, i) => (
                                                             <button
                                                                 key={i}
@@ -597,11 +579,11 @@ export default function EditorShell() {
                                                                     setPendingChatMsg(item.prompt);
                                                                     setTimeout(() => setPendingChatMsg(null), 500);
                                                                 }}
-                                                                className="w-full text-left px-4 py-2.5 text-xs font-medium text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-gradient-to-r hover:from-indigo-50 hover:to-purple-50 hover:text-indigo-700 hover:border-indigo-300 transition-all group shadow-sm hover:shadow-md"
+                                                                className="w-full text-left px-4 py-2.5 text-xs font-medium text-foreground bg-background border border-border rounded-lg hover:border-primary/50 hover:text-primary transition-all group shadow-sm hover:shadow-md"
                                                             >
                                                                 <div className="flex items-center justify-between">
                                                                     <span>{item.label}</span>
-                                                                    <svg className="w-3 h-3 text-slate-400 group-hover:text-indigo-500 opacity-0 group-hover:opacity-100 transition-all" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                    <svg className="w-3 h-3 text-muted-foreground group-hover:text-primary opacity-0 group-hover:opacity-100 transition-all" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                                                                     </svg>
                                                                 </div>
@@ -616,30 +598,47 @@ export default function EditorShell() {
 
 
                                 {/* Tip */}
-                                <div className="p-4 bg-yellow-50 rounded-lg border border-yellow-100 text-xs text-yellow-700 leading-relaxed">
+                                <div className="p-4 bg-muted/20 rounded-lg border border-border text-xs text-muted-foreground leading-relaxed">
                                     <strong>Tip:</strong> Double-click nodes to add specifications like "Use red buttons" or "Dark mode".
                                 </div>
                             </div>
 
                             {/* AI Chat Layout Adjustment */}
-                            <div className="border-t border-gray-100 h-[350px]">
+                            <div className="border-t border-border h-[350px]">
                                 <AIChatPanel
                                     onApplyFlow={(newNodes, newEdges) => {
-                                        // 1. Normalize Coordinates: Shift top-left-most node to (100, 100)
-                                        // This prevents the AI from generating nodes at (10000, 10000) or negative space
+                                        // 1. Auto Layout with Dagre
                                         if (newNodes.length > 0) {
-                                            const minX = Math.min(...newNodes.map(n => n.position.x));
-                                            const minY = Math.min(...newNodes.map(n => n.position.y));
+                                            const dagreGraph = new dagre.graphlib.Graph();
+                                            dagreGraph.setDefaultEdgeLabel(() => ({}));
+                                            dagreGraph.setGraph({ rankdir: "TB", nodesep: 100, ranksep: 120 });
 
-                                            const shiftedNodes = newNodes.map(n => ({
-                                                ...n,
-                                                position: {
-                                                    x: n.position.x - minX + 100,
-                                                    y: n.position.y - minY + 100
-                                                }
-                                            }));
+                                            newNodes.forEach((node) => {
+                                                const desc = node.data?.description || "";
+                                                // Estimate height: base height + (lines * line height)
+                                                const estHeight = 150 + Math.ceil(desc.length / 40) * 20;
+                                                dagreGraph.setNode(node.id, { width: 300, height: estHeight });
+                                            });
 
-                                            setNodes(shiftedNodes);
+                                            newEdges.forEach((edge) => {
+                                                dagreGraph.setEdge(edge.source, edge.target);
+                                            });
+
+                                            dagre.layout(dagreGraph);
+
+                                            const layoutedNodes = newNodes.map((node) => {
+                                                const nodeWithPosition = dagreGraph.node(node.id);
+                                                const desc = node.data?.description || "";
+                                                const estHeight = 150 + Math.ceil(desc.length / 40) * 20;
+                                                return {
+                                                    ...node,
+                                                    position: {
+                                                        x: nodeWithPosition.x - 150 + 100, // Center x (300/2)
+                                                        y: nodeWithPosition.y - (estHeight / 2) + 100, // Center y
+                                                    },
+                                                };
+                                            });
+                                            setNodes(layoutedNodes);
                                         } else {
                                             setNodes(newNodes);
                                         }
@@ -660,12 +659,12 @@ export default function EditorShell() {
                         </Panel>
 
                         <PanelResizeHandle className="bg-transparent w-4 -ml-2 z-50 hover:bg-transparent flex items-center justify-center group outline-none">
-                            <div className="w-[1px] h-8 bg-gray-200 group-hover:bg-indigo-400 transition-colors rounded-full" />
+                            <div className="w-[1px] h-8 bg-border group-hover:bg-primary transition-colors rounded-full" />
                         </PanelResizeHandle>
 
                         {/* ---------------- CENTER CANVAS ---------------- */}
-                        <Panel defaultSize={55} minSize={30} className="bg-slate-50/50 relative flex flex-col">
-                            <div className="m-4 flex-1 bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden relative">
+                        <Panel defaultSize={75} minSize={30} className="bg-muted/10 relative flex flex-col">
+                            <div className="m-4 flex-1 bg-background rounded-xl shadow-sm border border-border overflow-hidden relative">
                                 <div
                                     className="w-full h-full"
                                     onContextMenu={(e) => { e.preventDefault(); setSuggestionPos({ x: e.clientX, y: e.clientY }); }}
@@ -693,8 +692,8 @@ export default function EditorShell() {
 
                                     {/* Floating Action Button */}
                                     <div className="absolute top-6 left-6 z-10">
-                                        <div className="bg-white px-4 py-2 rounded-lg border border-gray-200 shadow-lg text-xs font-medium text-slate-600 flex items-center gap-2">
-                                            <Plus className="w-3 h-3 text-indigo-500" />
+                                        <div className="bg-background px-4 py-2 rounded-lg border border-border shadow-lg text-xs font-medium text-muted-foreground flex items-center gap-2">
+                                            <Plus className="w-3 h-3 text-primary" />
                                             Right-click to add nodes
                                         </div>
                                     </div>
@@ -703,17 +702,18 @@ export default function EditorShell() {
                         </Panel>
 
                         <PanelResizeHandle className="bg-transparent w-4 -ml-2 z-50 hover:bg-transparent flex items-center justify-center group outline-none">
-                            <div className="w-[1px] h-8 bg-gray-200 group-hover:bg-indigo-400 transition-colors rounded-full" />
+                            <div className="w-[1px] h-8 bg-border group-hover:bg-primary transition-colors rounded-full" />
                         </PanelResizeHandle>
 
                         {/* ---------------- RIGHT PREVIEW ---------------- */}
-                        <Panel defaultSize={35} minSize={25} maxSize={60} className="flex flex-col bg-slate-50/50 p-6">
-                            <div className="mb-6 flex justify-between items-center">
+                        <Panel ref={rightPanelRef} defaultSize={0} minSize={25} maxSize={60} collapsible={true} className="flex flex-col bg-muted/10 overflow-hidden">
+                            <div className="flex flex-col h-full w-full p-6 overflow-hidden">
+                                <div className="mb-6 flex justify-between items-center shrink-0">
                                 <div>
-                                    <h2 className="text-base font-bold text-slate-900 mb-1">
+                                    <h2 className="text-base font-bold mb-1">
                                         {activeRightTab === 'database' ? 'Local Database' : 'Live Preview'}
                                     </h2>
-                                    <p className="text-sm text-slate-500">
+                                    <p className="text-sm text-muted-foreground">
                                         {activeRightTab === 'database'
                                             ? 'Inspect SQLite data'
                                             : 'Generated UI updates instantly.'}
@@ -721,7 +721,7 @@ export default function EditorShell() {
                                 </div>
                             </div>
 
-                            <div className="flex-1 bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden flex flex-col h-full w-full">
+                            <div className="flex-1 bg-background rounded-2xl shadow-sm border border-border overflow-hidden flex flex-col h-full w-full">
                                 <div className="flex-1 overflow-hidden relative h-full w-full">
                                     {activeRightTab === 'database' ? (
                                         <DatabaseViewer />
@@ -729,6 +729,7 @@ export default function EditorShell() {
                                         <PreviewPane code={generatedCode || undefined} isGenerating={isGenerating} tokenStats={tokenStats} />
                                     )}
                                 </div>
+                            </div>
                             </div>
                         </Panel>
 

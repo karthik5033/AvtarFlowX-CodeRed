@@ -303,7 +303,7 @@ if (!window.__API_PROXY_INSTALLED__) {
                 {isLoading ? (
                     <div className="flex items-center justify-center h-full">
                         <div className="text-center">
-                            <div className="w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                            <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
                             <p className="text-neutral-600 dark:text-neutral-400">
                                 Generating your page...
                             </p>
@@ -329,7 +329,7 @@ if (!window.__API_PROXY_INSTALLED__) {
                                         key={file.name}
                                         onClick={() => setActiveHtmlIndex(index)}
                                         className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeHtmlIndex === index
-                                            ? 'bg-purple-600 text-white'
+                                            ? 'bg-primary text-primary-foreground'
                                             : 'bg-white dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700'
                                             }`}
                                     >

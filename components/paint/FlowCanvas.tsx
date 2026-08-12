@@ -25,28 +25,27 @@ import { Plus } from "lucide-react";
 const CustomNode = ({ data, selected }: NodeProps) => {
   return (
     <div
-      className={`relative group rounded-xl border-2 transition-all shadow-sm ${selected ? 'border-indigo-500 ring-2 ring-indigo-200' : 'border-gray-200 hover:border-indigo-300'}`}
+      className={`relative group rounded-xl border-2 bg-background transition-all shadow-sm ${selected ? 'border-primary ring-2 ring-primary/20' : 'border-border hover:border-primary/50'}`}
       style={{
-        backgroundColor: data.color || '#ffffff',
         minHeight: '60px',
-        minWidth: '150px'
+        minWidth: '220px'
       }}
     >
-      <div className="h-full w-full relative py-2">
+      <div className="h-full w-full relative py-3">
         {/* Top Handle (Target/Source) */}
         <Handle
           id="top"
           type="target"
           position={Position.Top}
-          className="!bg-indigo-300 hover:!bg-indigo-500 !w-3 !h-3 rounded-full opacity-0 group-hover:opacity-100 transition-all border-2 border-white -mt-1.5"
+          className="!bg-muted-foreground hover:!bg-primary !w-3 !h-3 rounded-full opacity-0 group-hover:opacity-100 transition-all border-2 border-background -mt-1.5"
         />
 
-        <div className="px-3">
-          <div className="text-center text-sm font-semibold text-gray-800 leading-tight">
+        <div className="px-4">
+          <div className="text-center text-sm font-semibold text-foreground leading-tight">
             {data.label}
           </div>
           {data.description && (
-            <div className="mt-2 text-xs text-gray-500 text-center leading-snug border-t border-black/5 pt-2">
+            <div className="mt-2 text-xs text-muted-foreground text-center leading-snug border-t border-border pt-2">
               {data.description}
             </div>
           )}
@@ -57,7 +56,7 @@ const CustomNode = ({ data, selected }: NodeProps) => {
           id="bottom"
           type="source"
           position={Position.Bottom}
-          className="!bg-indigo-300 hover:!bg-indigo-500 !w-3 !h-3 rounded-full opacity-0 group-hover:opacity-100 transition-all border-2 border-white -mb-1.5"
+          className="!bg-muted-foreground hover:!bg-primary !w-3 !h-3 rounded-full opacity-0 group-hover:opacity-100 transition-all border-2 border-background -mb-1.5"
         />
 
         {/* Left Handle (Target) */}
@@ -65,7 +64,7 @@ const CustomNode = ({ data, selected }: NodeProps) => {
           id="left"
           type="target"
           position={Position.Left}
-          className="!bg-indigo-300 hover:!bg-indigo-500 !w-3 !h-3 rounded-full opacity-0 group-hover:opacity-100 transition-all border-2 border-white -ml-1.5"
+          className="!bg-muted-foreground hover:!bg-primary !w-3 !h-3 rounded-full opacity-0 group-hover:opacity-100 transition-all border-2 border-background -ml-1.5"
         />
 
         {/* Right Handle (Source) */}
@@ -73,14 +72,14 @@ const CustomNode = ({ data, selected }: NodeProps) => {
           id="right"
           type="source"
           position={Position.Right}
-          className="!bg-indigo-300 hover:!bg-indigo-500 !w-3 !h-3 rounded-full opacity-0 group-hover:opacity-100 transition-all border-2 border-white -mr-1.5"
+          className="!bg-muted-foreground hover:!bg-primary !w-3 !h-3 rounded-full opacity-0 group-hover:opacity-100 transition-all border-2 border-background -mr-1.5"
         />
       </div>
 
       {/* Bubble-like (+) Add Button - Appears on hover/selection */}
       {(selected || true) && ( // Keeping consistent for demo, usually only on hover/select
         <button
-          className="absolute -bottom-8 left-1/2 transform -translate-x-1/2 w-6 h-6 bg-white hover:bg-indigo-50 border border-gray-300 hover:border-indigo-300 rounded-full flex items-center justify-center shadow-sm text-gray-400 hover:text-indigo-600 transition-all z-50 opacity-0 group-hover:opacity-100"
+          className="absolute -bottom-8 left-1/2 transform -translate-x-1/2 w-6 h-6 bg-background hover:bg-muted border border-border hover:border-primary/50 rounded-full flex items-center justify-center shadow-sm text-muted-foreground hover:text-primary transition-all z-50 opacity-0 group-hover:opacity-100"
           onClick={(e) => {
             // We need to bubble this event up to EditorShell
             // Since we can't easily pass props to node types without context, 
@@ -100,6 +99,12 @@ const CustomNode = ({ data, selected }: NodeProps) => {
 
 const nodeTypes = {
   default: CustomNode, // Override default for now, or use specific type
+};
+
+const defaultEdgeOptions = {
+  type: 'smoothstep',
+  animated: true,
+  style: { stroke: 'hsl(var(--muted-foreground))', strokeWidth: 2 }
 };
 
 type Props = {
@@ -136,7 +141,7 @@ export default function FlowCanvas({ nodes, edges, setNodes, setEdges, onSelectN
   );
 
   const onConnect = useCallback((connection: Connection) => {
-    setEdges((eds) => addEdge({ ...connection, animated: true, style: { stroke: '#cbd5e1', strokeWidth: 2, strokeDasharray: '5,5' } }, eds));
+    setEdges((eds) => addEdge({ ...connection, animated: true, style: { stroke: 'hsl(var(--primary))', strokeWidth: 2, strokeDasharray: '5,5' } }, eds));
   }, [setEdges]);
 
   return (
@@ -154,27 +159,24 @@ export default function FlowCanvas({ nodes, edges, setNodes, setEdges, onSelectN
 
         fitView
         attributionPosition="bottom-left"
-        defaultEdgeOptions={{
-          type: 'smoothstep',
-          animated: true,
-          style: { stroke: '#94a3b8', strokeWidth: 2 }
-        }}
+        defaultEdgeOptions={defaultEdgeOptions}
       >
         <Background
           id="bg"
           variant={BackgroundVariant.Dots}
           gap={24}
           size={1.5}
-          color="#e2e8f0"
-          className="bg-[#f8fafc]"
+          color="hsl(var(--muted-foreground) / 0.2)"
+          className="bg-muted/5"
         />
 
         <MiniMap
-          nodeColor={() => '#e2e8f0'}
-          maskColor="rgba(248, 250, 252, 0.7)"
-          className="!bg-white !shadow-sm !border !border-gray-100 !rounded-lg"
+          nodeColor="hsl(var(--primary) / 0.5)"
+          maskColor="hsl(var(--background) / 0.7)"
+          className="!bg-background !shadow-sm !border !border-border !rounded-lg"
+          style={{ height: 120, width: 160 }}
         />
-        <Controls className="!bg-white !shadow-sm !border !border-gray-100 !rounded-lg !text-gray-500" />
+        <Controls className="!bg-background !shadow-sm !border !border-border !rounded-lg [&>button]:!border-border [&>button]:!text-muted-foreground hover:[&>button]:!text-foreground hover:[&>button]:!bg-muted" />
       </ReactFlow>
     </div>
   );

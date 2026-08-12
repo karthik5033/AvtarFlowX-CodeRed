@@ -415,7 +415,7 @@ export default function AIBuilderPage() {
                                 <input
                                     type="text"
                                     placeholder="Edit with AI: e.g., 'Make it darker' or 'Add a contact form'"
-                                    className="flex-1 px-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                    className="flex-1 px-3 py-2 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                                     onKeyDown={(e) => {
                                         if (e.key === 'Enter' && e.currentTarget.value.trim()) {
                                             handleCustomize({ modification: e.currentTarget.value });
@@ -484,7 +484,7 @@ export default function AIBuilderPage() {
                             {!isPanelExpanded && (
                                 <div
                                     onMouseDown={handleMouseDown}
-                                    className="absolute top-0 left-0 right-0 cursor-ns-resize hover:bg-purple-500 transition-colors z-[100] flex items-center justify-center"
+                                    className="absolute top-0 left-0 right-0 cursor-ns-resize hover:bg-primary/50 transition-colors z-[100] flex items-center justify-center"
                                     style={{ height: '8px', marginTop: '-4px' }}
                                 >
                                     <div className="w-12 h-1 bg-neutral-400 dark:bg-neutral-600 rounded-full shadow-sm" />
@@ -516,7 +516,7 @@ export default function AIBuilderPage() {
                             {!isPanelExpanded && (
                                 <div
                                     onMouseDown={handleMouseDown}
-                                    className="absolute top-0 left-0 right-0 cursor-ns-resize hover:bg-purple-500 transition-colors z-[100] flex items-center justify-center"
+                                    className="absolute top-0 left-0 right-0 cursor-ns-resize hover:bg-primary/50 transition-colors z-[100] flex items-center justify-center"
                                     style={{ height: '8px', marginTop: '-4px' }}
                                 >
                                     <div className="w-12 h-1 bg-neutral-400 dark:bg-neutral-600 rounded-full shadow-sm" />

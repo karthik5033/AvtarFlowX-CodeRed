@@ -168,7 +168,7 @@ export default function DatabaseViewer({ schema, onExpandChange }: DatabaseViewe
             <div className="border-b border-neutral-200 dark:border-neutral-800 p-4">
                 <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
-                        <Database className="w-5 h-5 text-purple-500" />
+                        <Database className="w-5 h-5 text-primary" />
                         <h2 className="text-lg font-semibold">Local Database</h2>
                         <span className="text-xs px-2 py-1 rounded-full bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300">
                             SQLite
@@ -231,7 +231,7 @@ export default function DatabaseViewer({ schema, onExpandChange }: DatabaseViewe
                                     key={tableName}
                                     onClick={() => setSelectedTable(tableName)}
                                     className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${selectedTable === tableName
-                                        ? 'bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300'
+                                        ? 'bg-primary/20 dark:bg-primary/30 text-primary dark:text-primary'
                                         : 'hover:bg-neutral-100 dark:hover:bg-neutral-800'
                                         }`}
                                 >
@@ -343,9 +343,9 @@ export default function DatabaseViewer({ schema, onExpandChange }: DatabaseViewe
                                                 {documents[0] ? Object.keys(documents[0]).length : 0}
                                             </div>
                                         </div>
-                                        <div className="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg p-3">
-                                            <div className="text-xs text-purple-600 dark:text-purple-400 font-medium">Table</div>
-                                            <div className="text-lg font-bold text-purple-700 dark:text-purple-300 truncate">{selectedTable}</div>
+                                        <div className="bg-primary/10 dark:bg-primary/20 border border-primary/20 dark:border-primary/30 rounded-lg p-3">
+                                            <div className="text-xs text-primary dark:text-primary font-medium">Table</div>
+                                            <div className="text-lg font-bold text-primary dark:text-primary truncate">{selectedTable}</div>
                                         </div>
                                     </div>
 

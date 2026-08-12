@@ -12,6 +12,7 @@ function getApiKeys(): string[] {
     const keys: string[] = [];
     const key1 = process.env.GEMINI_API_KEY;
     const key2 = process.env.NEW_GEMINI_API_KEY;
+    console.log("CHECKING API KEYS:", { key1: key1 ? "present" : "missing", key2: key2 ? "present" : "missing" });
     if (key1) keys.push(key1);
     if (key2) keys.push(key2);
     return keys;
@@ -54,7 +55,7 @@ export type GeminiModelConfig = {
 };
 
 const DEFAULT_MODEL_CONFIG: GeminiModelConfig = {
-    model: 'gemini-2.0-flash',
+    model: 'gemini-2.5-flash',
     generationConfig: {
         temperature: 0.7,
         topP: 0.95,
@@ -83,7 +84,7 @@ export function getModel(config?: GeminiModelConfig): {
 
     const merged = { ...DEFAULT_MODEL_CONFIG, ...config };
     const modelParams: ModelParams = {
-        model: merged.model || 'gemini-2.0-flash',
+        model: merged.model || 'gemini-2.5-flash',
         generationConfig: merged.generationConfig,
         ...(merged.systemInstruction ? { systemInstruction: merged.systemInstruction } : {}),
     };
@@ -121,7 +122,7 @@ export async function withRetry<T>(
             const genAI = new GoogleGenerativeAI(apiKey);
             const merged = { ...DEFAULT_MODEL_CONFIG, ...config };
             const modelParams: ModelParams = {
-                model: merged.model || 'gemini-2.0-flash',
+                model: merged.model || 'gemini-2.5-flash',
                 generationConfig: merged.generationConfig,
                 ...(merged.systemInstruction ? { systemInstruction: merged.systemInstruction } : {}),
             };

@@ -197,7 +197,7 @@ export default function PromptInput({ onSubmit, isLoading }: PromptInputProps) {
             {/* Header */}
             <div className="p-4 border-b border-neutral-200 dark:border-neutral-800">
                 <h2 className="text-lg font-semibold flex items-center gap-2">
-                    <Sparkles className="w-5 h-5 text-indigo-500" />
+                    <Sparkles className="w-5 h-5 text-primary" />
                     AI App Builder
                 </h2>
                 <p className="text-sm text-neutral-600 dark:text-neutral-400 mt-1">
@@ -234,7 +234,7 @@ export default function PromptInput({ onSubmit, isLoading }: PromptInputProps) {
                                         key={index}
                                         onClick={() => handlePromptSelect(promptText)}
                                         disabled={isLoading}
-                                        className="w-full text-left p-2.5 text-xs rounded-md bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 hover:border-indigo-500 dark:hover:border-indigo-500 hover:shadow-sm transition-all disabled:opacity-50 line-clamp-2"
+                                        className="w-full text-left p-2.5 text-xs rounded-md bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 hover:border-primary dark:hover:border-primary hover:shadow-sm transition-all disabled:opacity-50 line-clamp-2"
                                     >
                                         {promptText}
                                     </button>
@@ -257,7 +257,7 @@ export default function PromptInput({ onSubmit, isLoading }: PromptInputProps) {
                         <Button
                             onClick={handleSubmit}
                             disabled={!prompt.trim() || isLoading}
-                            className="flex-1 h-10 bg-indigo-600 hover:bg-indigo-700 text-sm"
+                            className="flex-1 h-10 bg-primary hover:bg-primary/90 text-primary-foreground text-sm"
                         >
                             {isLoading ? (
                                 <>
