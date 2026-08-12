@@ -3,6 +3,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import { generatePagePrompt } from '@/lib/prompts';
 import { optimizePrompt } from '@/lib/prompt-optimizer';
 import { parseAIResponse } from '@/lib/file-parser';
+import { withRetry, hasApiKey } from '@/lib/gemini-client';
 
 export async function POST(request: NextRequest) {
     try {
@@ -15,28 +16,13 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // Check if API key is configured at runtime
-        const apiKey = process.env.GEMINI_API_KEY;
-
-        if (!apiKey) {
-            console.error('GEMINI_API_KEY not found in environment variables');
+        if (!hasApiKey()) {
+            console.error('No Gemini API keys found in environment variables');
             return NextResponse.json(
                 { error: 'GEMINI_API_KEY not configured. Please add it to .env.local and restart the server' },
                 { status: 500 }
             );
         }
-
-        // Initialize Gemini client at runtime with the API key
-        const genAI = new GoogleGenerativeAI(apiKey);
-        const model = genAI.getGenerativeModel({
-            model: 'gemini-2.0-flash-exp',
-            generationConfig: {
-                temperature: 0.7,
-                topP: 0.95,
-                topK: 40,
-                maxOutputTokens: 8192,
-            },
-        });
 
         // Optimize prompt to reduce token usage
         const optimizedPrompt = optimizePrompt(prompt);
@@ -44,44 +30,57 @@ export async function POST(request: NextRequest) {
         // Generate the full prompt with system instructions
         const fullPrompt = generatePagePrompt(optimizedPrompt);
 
-        // Create a streaming response
+        // Create a streaming response using withRetry for key rotation
         const encoder = new TextEncoder();
         const stream = new ReadableStream({
             async start(controller) {
                 try {
-                    // Generate content with streaming
-                    const result = await model.generateContentStream(fullPrompt);
+                    await withRetry(
+                        {
+                            model: 'gemini-2.0-flash-exp',
+                            generationConfig: {
+                                temperature: 0.7,
+                                topP: 0.95,
+                                topK: 40,
+                                maxOutputTokens: 8192,
+                            },
+                        },
+                        async (model) => {
+                            // Generate content with streaming
+                            const result = await model.generateContentStream(fullPrompt);
 
-                    let fullResponse = '';
+                            let fullResponse = '';
 
-                    // Stream the response
-                    for await (const chunk of result.stream) {
-                        const text = chunk.text();
-                        fullResponse += text;
+                            // Stream the response
+                            for await (const chunk of result.stream) {
+                                const text = chunk.text();
+                                fullResponse += text;
 
-                        // Send chunk to client
-                        controller.enqueue(
-                            encoder.encode(`data: ${JSON.stringify({ chunk: text })}\n\n`)
-                        );
-                    }
+                                // Send chunk to client
+                                controller.enqueue(
+                                    encoder.encode(`data: ${JSON.stringify({ chunk: text })}\n\n`)
+                                );
+                            }
 
-                    // Extract and validate files with structure
-                    const { files, structure, database } = parseAIResponse(fullResponse);
+                            // Extract and validate files with structure
+                            const { files, structure, database } = parseAIResponse(fullResponse);
 
-                    // Send final files with structure
-                    controller.enqueue(
-                        encoder.encode(
-                            `data: ${JSON.stringify({
-                                done: true,
-                                files,
-                                structure,
-                                database,
-                                fullResponse
-                            })}\n\n`
-                        )
+                            // Send final files with structure
+                            controller.enqueue(
+                                encoder.encode(
+                                    `data: ${JSON.stringify({
+                                        done: true,
+                                        files,
+                                        structure,
+                                        database,
+                                        fullResponse
+                                    })}\n\n`
+                                )
+                            );
+
+                            controller.close();
+                        }
                     );
-
-                    controller.close();
                 } catch (error) {
                     console.error('Streaming error:', error);
                     controller.enqueue(

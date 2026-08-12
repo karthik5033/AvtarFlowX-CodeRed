@@ -10,11 +10,10 @@ export default function InterviewPage() {
     const [streamData, setStreamData] = useState<{ streamId: string; sessionId: string } | null>(null);
     const [error, setError] = useState<string | null>(null);
 
-    // Training State
-    const [systemPrompt, setSystemPrompt] = useState("");
-    const [integrationCode, setIntegrationCode] = useState<string | null>(null);
+
 
     // Audio & Interaction State
+    const [isMuted, setIsMuted] = useState(true);
     const [isRecording, setIsRecording] = useState(false);
     const [isProcessing, setIsProcessing] = useState(false);
 
@@ -24,25 +23,45 @@ export default function InterviewPage() {
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
     const chunksRef = useRef<Blob[]>([]);
 
+    // Helper to toggle mute
+    const toggleMute = () => {
+        if (videoRef.current) {
+            videoRef.current.muted = !videoRef.current.muted;
+            setIsMuted(videoRef.current.muted);
+        }
+    };
+
     const suggestions = [
-        { label: "Customer Support", prompt: "You are a friendly and patient customer support agent for a tech company. Help users troubleshoot common issues." },
-        { label: "Website Guide", prompt: "You are a knowledgeable guide for our official website. Answer visitor questions about our services, pricing, and contact information accurately." },
-        { label: "Sales Rep", prompt: "You are a charismatic sales representative pitching a new fitness app. Focus on benefits and be persuasive." },
-        { label: "Tech Interviewer", prompt: "You are a strict but fair technical interviewer. Ask questions about React, Node.js, and system design." },
-        { label: "Wellness Coach", prompt: "You are an empathetic wellness coach. Listen to user concerns and offer calming, practical advice for stress management." },
-        { label: "Language Tutor", prompt: "You are a Spanish language tutor. Speak mostly in Spanish but explain complex grammar in English." },
-        { label: "Code Reviewer", prompt: "You are a senior developer. Review code snippets, find bugs, and suggest clean architecture improvements." },
-        { label: "Storyteller", prompt: "You are a creative storyteller. Engage the user by spinning exciting tales and interactive narratives based on their input." }
+        { label: "Customer Support", prompt: "You are a friendly and patient customer support agent for this application. Use the provided Knowledge Base to help users troubleshoot specific issues found in the app data." },
+        { label: "Website Guide", prompt: "You are a knowledgeable guide for this website. Use the Knowledge Base to answer visitor questions about services, pricing, and contact info." },
+        { label: "Sales Rep", prompt: "You are a charismatic sales representative pitching this product. Use the features listed in the Knowledge Base to explain benefits persuasively." },
+        { label: "Tech Interviewer", prompt: "You are a strict technical interviewer. Use the job requirements in the Knowledge Base to ask relevant coding questions." },
+        { label: "Wellness Coach", prompt: "You are an empathetic wellness coach integrating with this health app. Use the user's health data (if provided) and Knowledge Base to offer advice." },
+        { label: "Language Tutor", prompt: "You are a language tutor for this learning platform. Use the course curriculum in the Knowledge Base to guide the lesson." },
+        { label: "Code Reviewer", prompt: "You are a senior developer reviewing code for this project. Use the project's style guide and Knowledge Base to suggest improvements." },
+        { label: "Storyteller", prompt: "You are a creative storyteller. Weave narratives using the themes and lore found in the Knowledge Base." }
     ];
 
     // State for Tabs and Avatar Selection
-    const [activeTab, setActiveTab] = useState<'appearance' | 'details'>('appearance');
+    const [activeTab, setActiveTab] = useState<'appearance' | 'details' | 'knowledge' | 'settings'>('appearance');
     const [selectedAvatar, setSelectedAvatar] = useState('https://clips-presenters.d-id.com/amy/image.png');
+
+    // Agent State
+    const [systemPrompt, setSystemPrompt] = useState('');
+    const [knowledgeBase, setKnowledgeBase] = useState('');
+    const [creativity, setCreativity] = useState(0.7);
+    const [integrationCode, setIntegrationCode] = useState<string | null>(null);
+
+    const avtarFlowTitle = "Avatar Studio";
 
     const avatars = [
         { id: 'amy', name: 'Amy', url: 'https://clips-presenters.d-id.com/amy/image.png', type: 'Standard' },
         { id: 'matt', name: 'Matt', url: 'https://clips-presenters.d-id.com/matt/image.png', type: 'Standard' },
-        { id: 'arianne', name: 'Arianne', url: 'https://clips-presenters.d-id.com/arianne/image.png', type: 'Standard' }
+        { id: 'sarah', name: 'Sarah', url: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=800&q=80', type: 'Premium' },
+        { id: 'alex', name: 'Alex', url: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=800&q=80', type: 'Premium' },
+        { id: 'jessica', name: 'Jessica', url: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=800&q=80', type: 'Premium' },
+        { id: 'david', name: 'David', url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=800&q=80', type: 'Premium' },
+        { id: 'emily', name: 'Emily', url: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=800&q=80', type: 'Premium' }
     ];
 
     // 1. Initialize Connection
@@ -64,7 +83,6 @@ export default function InterviewPage() {
 
                 console.log(`[WebRTC] Track received: ${event.track.kind}, StreamID: ${stream.id}`);
 
-                // Only assign if it's a new stream to prevent interrupting playback
                 if (videoRef.current.srcObject !== stream) {
                     console.log("[WebRTC] Assigning stream to video element");
                     videoRef.current.srcObject = stream;
@@ -73,21 +91,25 @@ export default function InterviewPage() {
                 if (event.track.kind === 'video') {
                     console.log("[WebRTC] Video track detected! muted=" + event.track.muted);
 
+                    // Attempt auto-unmute handling
                     if (event.track.muted) {
                         event.track.onunmute = () => {
                             console.log("[WebRTC] Track unmuted, requesting play");
-                            videoRef.current?.play().catch(e => {
-                                if (e.name !== 'AbortError') console.error("Play error on unmute:", e);
-                            });
+                            videoRef.current?.play().then(() => {
+                                if (videoRef.current) {
+                                    videoRef.current.muted = false;
+                                    setIsMuted(false);
+                                }
+                            }).catch(e => console.error("Play/Unmute error:", e));
                         };
+                    } else {
+                        videoRef.current?.play().then(() => {
+                            if (videoRef.current) {
+                                videoRef.current.muted = false;
+                                setIsMuted(false);
+                            }
+                        }).catch(e => console.log("Autoplay blocked, waiting for user interaction"));
                     }
-                }
-
-                // Always try to play when a track arrives, if paused
-                if (videoRef.current.paused) {
-                    videoRef.current.play().catch(e => {
-                        if (e.name !== 'AbortError') console.error("Auto-play error:", e);
-                    });
                 }
             };
 
@@ -119,7 +141,10 @@ export default function InterviewPage() {
             const { id: streamId, session_id: sessionId, offer, ice_servers } = await createRes.json();
             console.log("[CreateStream] Success:", { streamId, sessionId });
 
-            setStreamData({ streamId, sessionId });
+            // Handle undefined sessionId (D-ID often omits it for Streams) 
+            // If it's undefined, we just store it as is, or an empty string if preferred, 
+            // but keeping it undefined is cleaner for checks.
+            setStreamData({ streamId, sessionId: sessionId || '' });
 
             // Update ICE servers if provided
             if (ice_servers && ice_servers.length > 0) {
@@ -182,6 +207,13 @@ export default function InterviewPage() {
     // 2. Audio Recording Logic
     const startRecording = async () => {
         try {
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                const isSecure = window.location.protocol === 'https:' || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+                throw new Error(isSecure
+                    ? "Microphone access is not supported in this browser."
+                    : "Microphone blocked: You are accessing via HTTP. Please use 'localhost' or HTTPS."
+                );
+            }
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
             // Detect supported mimeType
@@ -229,6 +261,8 @@ export default function InterviewPage() {
             formData.append('streamId', streamData.streamId);
             formData.append('sessionId', streamData.sessionId);
             formData.append('systemPrompt', systemPrompt); // Pass context
+            formData.append('knowledgeBase', knowledgeBase); // Pass RAG context
+            formData.append('creativity', creativity.toString()); // Pass temp
 
             const res = await fetch('/api/chat/process', {
                 method: 'POST',
@@ -264,10 +298,15 @@ export default function InterviewPage() {
         setStreamData(null);
     };
 
+    // Integration Code Gen
     const handleIntegrate = () => {
-        // Mock Integration
-        const mockId = Math.random().toString(36).substring(7);
-        setIntegrationCode(`<AvatarAgent id="${mockId}" context="${encodeURIComponent(systemPrompt.substring(0, 30))}..." />`);
+        // Mock Saving to "Database"
+        console.log("Saving Avatar Profile:", { systemPrompt, knowledgeBase, creativity, selectedAvatar });
+
+        // Mock generation of embed code with persistent ID
+        const mockId = "av_" + Math.random().toString(36).substring(7);
+        setIntegrationCode(`<script src="https://avatar-studio.com/embed/${mockId}" defer></script>
+<!-- Profile Saved: ${new Date().toLocaleTimeString()} -->`);
     };
 
     useEffect(() => {
@@ -279,26 +318,16 @@ export default function InterviewPage() {
             {/* Header */}
             <div className="border-b border-zinc-200 px-8 py-4 flex items-center justify-between bg-white z-20">
                 <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 bg-purple-600 rounded-lg flex items-center justify-center">
-                        <span className="text-white font-bold text-lg">AI</span>
+                    <div className="bg-purple-600 rounded-lg p-1.5">
+                        <span className="text-white font-bold text-sm">AI</span>
                     </div>
-                    <span className="font-bold text-xl">Avatar Studio</span>
+                    <span className="text-xl font-bold tracking-tight text-zinc-900">{avtarFlowTitle}</span>
                 </div>
-                <div className="flex gap-6 text-sm font-medium text-zinc-500">
-                    <button
-                        onClick={() => setActiveTab('appearance')}
-                        className={`pb-1 border-b-2 transition-colors ${activeTab === 'appearance' ? 'text-purple-600 border-purple-600' : 'border-transparent hover:text-zinc-800'}`}
-                    >
-                        Appearance
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('details')}
-                        className={`pb-1 border-b-2 transition-colors ${activeTab === 'details' ? 'text-purple-600 border-purple-600' : 'border-transparent hover:text-zinc-800'}`}
-                    >
-                        Agent details
-                    </button>
-                    <button className="pb-1 border-b-2 border-transparent hover:text-zinc-800 cursor-not-allowed opacity-50">Knowledge sources</button>
-                    <button className="pb-1 border-b-2 border-transparent hover:text-zinc-800 cursor-not-allowed opacity-50">Chat settings</button>
+                <div className="flex gap-8 text-sm font-medium text-zinc-500">
+                    <button onClick={() => setActiveTab('appearance')} className={`pb-1 border-b-2 transition-all ${activeTab === 'appearance' ? 'text-purple-600 border-purple-600' : 'border-transparent hover:text-zinc-800'}`}>Appearance</button>
+                    <button onClick={() => setActiveTab('details')} className={`pb-1 border-b-2 transition-all ${activeTab === 'details' ? 'text-purple-600 border-purple-600' : 'border-transparent hover:text-zinc-800'}`}>Agent details</button>
+                    <button onClick={() => setActiveTab('knowledge')} className={`pb-1 border-b-2 transition-all ${activeTab === 'knowledge' ? 'text-purple-600 border-purple-600' : 'border-transparent hover:text-zinc-800'}`}>Knowledge sources</button>
+                    <button onClick={() => setActiveTab('settings')} className={`pb-1 border-b-2 transition-all ${activeTab === 'settings' ? 'text-purple-600 border-purple-600' : 'border-transparent hover:text-zinc-800'}`}>Chat settings</button>
                 </div>
                 <div className="flex items-center gap-3">
                     <button
@@ -394,6 +423,59 @@ export default function InterviewPage() {
                             </div>
                         </div>
                     )}
+
+                    {activeTab === 'knowledge' && (
+                        <div className="max-w-2xl">
+                            <h1 className="text-2xl font-bold text-zinc-900 mb-2">Knowledge Base</h1>
+                            <p className="text-zinc-500 mb-6">Provide context and facts for the avatar to reference.</p>
+
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="text-sm font-semibold text-zinc-900 mb-2 block">Data Source (Text)</label>
+                                    <textarea
+                                        value={knowledgeBase}
+                                        onChange={(e) => setKnowledgeBase(e.target.value)}
+                                        className="w-full h-64 bg-white border border-zinc-300 rounded-xl p-4 text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none shadow-sm font-mono"
+                                        placeholder="Paste articles, FAQs, or product details here..."
+                                    />
+                                    <p className="text-xs text-zinc-400 mt-2">The avatar will use this information to answer user questions grounding its responses.</p>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {activeTab === 'settings' && (
+                        <div className="max-w-2xl">
+                            <h1 className="text-2xl font-bold text-zinc-900 mb-2">Chat Settings</h1>
+                            <p className="text-zinc-500 mb-6">Fine-tune the behavior and voice of your avatar.</p>
+
+                            <div className="space-y-8">
+                                <div>
+                                    <div className="flex justify-between mb-2">
+                                        <label className="text-sm font-semibold text-zinc-900">Creativity (Temperature)</label>
+                                        <span className="text-sm font-medium text-purple-600">{creativity}</span>
+                                    </div>
+                                    <input
+                                        type="range"
+                                        min="0" max="1" step="0.1"
+                                        value={creativity}
+                                        onChange={(e) => setCreativity(parseFloat(e.target.value))}
+                                        className="w-full h-2 bg-zinc-200 rounded-lg appearance-none cursor-pointer accent-purple-600"
+                                    />
+                                    <div className="flex justify-between mt-1 text-xs text-zinc-400">
+                                        <span>Precise</span>
+                                        <span>Balanced</span>
+                                        <span>Creative</span>
+                                    </div>
+                                </div>
+
+                                <div className="p-4 bg-yellow-50 border border-yellow-100 rounded-xl">
+                                    <h3 className="text-sm font-bold text-yellow-800 mb-1">Note</h3>
+                                    <p className="text-xs text-yellow-700">Voice settings are currently managed automatically by D-ID based on the avatar selection.</p>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 {/* Right Panel: Preview */}
@@ -411,14 +493,44 @@ export default function InterviewPage() {
                         {/* Video Area */}
                         <div className="flex-1 bg-zinc-100 relative overflow-hidden group">
                             {/* Video Element - Always rendered but managed via visibility/z-index */}
-                            {/* Added 'muted' to ensure autoplay works without user gesture if needed initially */}
+                            {/* Added 'controls' for debugging and manual playback */}
                             <video
                                 ref={videoRef}
                                 autoPlay
                                 playsInline
-                                muted
+                                muted // Start muted for autoplay policy
+                                controls // Allow user to scrub/replay/unmute manually
                                 className={`w-full h-full object-cover transition-all duration-500 absolute inset-0 z-0 bg-black`}
+                                onLoadedMetadata={() => {
+                                    console.log(`[Video] Metadata loaded. Video size: ${videoRef.current?.videoWidth}x${videoRef.current?.videoHeight}`);
+                                }}
                             />
+
+                            {/* UNMUTE OVERLAY */}
+                            {isConnected && !isLoading && (
+                                <div className="absolute top-4 right-4 z-40 flex flex-col gap-2">
+                                    <button
+                                        onClick={toggleMute}
+                                        className={`p-2 rounded-full backdrop-blur-sm transition-all ${isMuted ? 'bg-red-500/80 text-white' : 'bg-black/50 text-white hover:bg-black/70'}`}
+                                        title={isMuted ? "Unmute Audio" : "Mute Audio"}
+                                    >
+                                        {isMuted ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+                                        <span className="sr-only">{isMuted ? "Unmute" : "Mute"}</span>
+                                    </button>
+                                </div>
+                            )}
+
+                            {error && (
+                                <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80 z-30 p-4 text-center">
+                                    <p className="text-red-400 text-xs font-medium mb-3">{error}</p>
+                                    <button
+                                        onClick={startSession}
+                                        className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white text-xs rounded-full transition-all border border-white/20"
+                                    >
+                                        Retry Connection
+                                    </button>
+                                </div>
+                            )}
 
                             {!isConnected && !isLoading && (
                                 <div className="absolute inset-0 flex flex-col items-center justify-center z-10 bg-white/80 backdrop-blur-sm">
@@ -438,12 +550,6 @@ export default function InterviewPage() {
                                 <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/40 backdrop-blur-sm z-20 text-white">
                                     <Loader2 className="w-8 h-8 animate-spin mb-2" />
                                     <p className="text-xs font-medium">Connecting...</p>
-                                </div>
-                            )}
-
-                            {error && (
-                                <div className="absolute inset-0 flex items-center justify-center bg-black/80 z-30 p-4 text-center">
-                                    <p className="text-red-400 text-xs font-medium">{error}</p>
                                 </div>
                             )}
                         </div>

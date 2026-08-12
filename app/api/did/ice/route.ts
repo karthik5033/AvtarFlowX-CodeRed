@@ -12,18 +12,20 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'Missing required parameters' }, { status: 400 });
         }
 
+        const didBody: any = {
+            candidate,
+            sdpMid,
+            sdpMLineIndex
+        };
+        if (sessionId) didBody.session_id = sessionId;
+
         const response = await fetch(`${DID_API_URL}/talks/streams/${streamId}/ice`, {
             method: 'POST',
             headers: {
                 'Authorization': authHeader,
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({
-                session_id: sessionId,
-                candidate,
-                sdpMid,
-                sdpMLineIndex
-            }),
+            body: JSON.stringify(didBody),
         });
 
         if (!response.ok) {

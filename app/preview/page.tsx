@@ -1,9 +1,9 @@
 'use client';
 
 import { useSearchParams } from 'next/navigation';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 
-export default function PreviewPage() {
+function PreviewContent() {
     const searchParams = useSearchParams();
     const projectId = searchParams.get('projectId');
     const [files, setFiles] = useState<any[]>([]);
@@ -88,6 +88,14 @@ export default function PreviewPage() {
                 </div>
             </div>
         </div>
+    );
+}
+
+export default function PreviewPage() {
+    return (
+        <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-gray-900 text-white">Loading preview...</div>}>
+            <PreviewContent />
+        </Suspense>
     );
 }
 

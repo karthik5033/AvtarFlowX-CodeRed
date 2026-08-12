@@ -296,7 +296,7 @@ export default function PropertyInspector({
                                         />
                                         <SketchPicker
                                             color={selectedElement.computedStyles.color}
-                                            onChange={(color) => handleColorChange('color', color)}
+                                            onChange={(color: any) => handleColorChange('color', color)}
                                         />
                                     </div>
                                 )}
@@ -332,7 +332,7 @@ export default function PropertyInspector({
                                         />
                                         <SketchPicker
                                             color={selectedElement.computedStyles.backgroundColor}
-                                            onChange={(color) => handleColorChange('backgroundColor', color)}
+                                            onChange={(color: any) => handleColorChange('backgroundColor', color)}
                                         />
                                     </div>
                                 )}

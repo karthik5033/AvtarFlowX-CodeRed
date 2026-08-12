@@ -53,10 +53,10 @@ export async function GET(request: NextRequest) {
                 : [];
 
             const project: Project = {
-                id: String(projectResult.data.id),
-                name: projectResult.data.name,
+                id: String((projectResult.data as any).id),
+                name: (projectResult.data as any).name,
                 pages,
-                currentPageId: projectResult.data.current_page_id,
+                currentPageId: (projectResult.data as any).current_page_id,
             };
 
             return NextResponse.json({ success: true, data: project });
@@ -209,7 +209,7 @@ export async function DELETE(request: NextRequest) {
         const pagesResult = db.getAll('vb_pages', 1000);
         if (pagesResult.success && pagesResult.data) {
             const projectPages = pagesResult.data.filter((p: any) => p.project_id == projectId);
-            for (const page of projectPages) {
+            for (const page of projectPages as any[]) {
                 db.deleteRow('vb_pages', page.id);
             }
         }

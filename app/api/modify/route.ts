@@ -3,6 +3,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import { generateCustomizationPrompt, generateModificationPrompt } from '@/lib/prompts';
 import { parseAIResponse } from '@/lib/file-parser';
 import { FileData } from '@/types/ai-builder';
+import { withRetry, hasApiKey } from '@/lib/gemini-client';
 
 export async function POST(request: NextRequest) {
     try {
@@ -34,27 +35,12 @@ export async function POST(request: NextRequest) {
             ).join('\n\n');
         }
 
-        // Check if API key is configured at runtime
-        const apiKey = process.env.GEMINI_API_KEY;
-
-        if (!apiKey) {
+        if (!hasApiKey()) {
             return NextResponse.json(
                 { error: 'GEMINI_API_KEY not configured' },
                 { status: 500 }
             );
         }
-
-        // Initialize Gemini client at runtime
-        const genAI = new GoogleGenerativeAI(apiKey);
-        const model = genAI.getGenerativeModel({
-            model: 'gemini-2.0-flash-exp',
-            generationConfig: {
-                temperature: 0.7,
-                topP: 0.95,
-                topK: 40,
-                maxOutputTokens: 8192,
-            },
-        });
 
         // Generate prompt based on type of modification
         let prompt: string;
@@ -71,11 +57,25 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        console.log('[Modify API] Calling Gemini API...');
-        // Generate modified code
-        const result = await model.generateContent(prompt);
-        console.log('[Modify API] Gemini API response received');
-        const response = result.response.text();
+        console.log('[Modify API] Calling Gemini API with key rotation...');
+
+        const response = await withRetry(
+            {
+                model: 'gemini-2.0-flash-exp',
+                generationConfig: {
+                    temperature: 0.7,
+                    topP: 0.95,
+                    topK: 40,
+                    maxOutputTokens: 8192,
+                },
+            },
+            async (model) => {
+                // Generate modified code
+                const result = await model.generateContent(prompt);
+                console.log('[Modify API] Gemini API response received');
+                return result.response.text();
+            }
+        );
 
         // Extract files from response
         const { files: modifiedFiles } = parseAIResponse(response);

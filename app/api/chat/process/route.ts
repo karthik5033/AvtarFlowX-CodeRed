@@ -4,10 +4,12 @@ import { GoogleAIFileManager, FileState } from '@google/generative-ai/server';
 import { writeFile, unlink } from 'fs/promises';
 import { join } from 'path';
 import { tmpdir } from 'os';
+import { getApiKey, rotateKey } from '@/lib/gemini-client';
 
 export async function POST(req: Request) {
     let tempFilePath = '';
-    const apiKey = process.env.GEMINI_API_KEY || process.env.NEW_GEMINI_API_KEY || '';
+    let apiKey = '';
+    try { apiKey = getApiKey(); } catch { apiKey = ''; }
 
     try {
         const formData = await req.formData();
@@ -16,6 +18,8 @@ export async function POST(req: Request) {
         const systemPrompt = formData.get('systemPrompt') as string;
         const sessionId = formData.get('sessionId') as string;
         const mimeType = formData.get('mimeType') as string || 'audio/webm';
+        const knowledgeBase = formData.get('knowledgeBase') as string;
+        const creativity = parseFloat(formData.get('creativity') as string || '0.7');
 
         console.log(`[ChatProcess] Params: StreamID=${streamId}, SessionID=${sessionId}, AudioSize=${audioFile?.size}, MimeType=${mimeType}`);
 
@@ -64,14 +68,25 @@ export async function POST(req: Request) {
         }
         console.log(`[ChatProcess] File ready: ${file.uri} State: ${file.state}`);
 
-
         // 3. Call Gemini
         console.log("[ChatProcess] Calling Gemini 2.0 Flash...");
-        const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+        const model = genAI.getGenerativeModel({
+            model: "gemini-2.0-flash",
+            generationConfig: {
+                temperature: creativity // Use the creativity/temperature setting
+            }
+        });
+
         const baseSystem = "You are a professional AI avatar. Provide a concise, engaging response to the user's audio input. Keep it under 2 sentences.";
-        const finalPrompt = systemPrompt ?
-            `Your Persona/Context: ${systemPrompt}\n\nTask: Reply to the audio input acting as this persona. Keep it concise (under 2 sentences) for conversation` :
-            baseSystem;
+        let finalPrompt = baseSystem;
+
+        if (systemPrompt || knowledgeBase) {
+            finalPrompt = `Your Persona/Context: ${systemPrompt || "Professional AI Assistant"}\n`;
+            if (knowledgeBase) {
+                finalPrompt += `\nKnowledge Base (Use this to answer): ${knowledgeBase}\n`;
+            }
+            finalPrompt += `\nTask: Reply to the audio input acting as this persona. Keep it concise (under 2 sentences) for conversation.`;
+        }
 
         const result = await model.generateContent([
             finalPrompt,
@@ -100,18 +115,15 @@ export async function POST(req: Request) {
             body: JSON.stringify({
                 script: {
                     type: 'text',
-                    subtitles: 'false',
+                    subtitles: false,
                     provider: { type: 'microsoft', voice_id: 'en-US-JennyNeural' },
                     input: responseText
                 },
                 config: {
                     fluent: true,
-                    pad_audio: 0,
-                    driver_expressions: {
-                        expressions: [{ expression: 'neutral', intensity: 0 }]
-                    }
+                    pad_audio: 0
                 },
-                session_id: sessionId
+                // session_id: sessionId // Removing explicit session_id as it appears to be capturing cookie data and is optional for Stream Talk
             })
         });
 
@@ -125,6 +137,12 @@ export async function POST(req: Request) {
 
     } catch (error: any) {
         console.error('Chat Processing Exception:', error);
+        // Rotate API key on 429 so the next request uses a different one
+        const msg = error.message || '';
+        if (msg.includes('429') || msg.includes('Too Many Requests') || msg.includes('quota')) {
+            rotateKey();
+            console.log('[ChatProcess] Rotated API key for next request due to 429');
+        }
         return NextResponse.json({
             error: 'Gemini Generation Failed',
             details: error.message

@@ -1,20 +1,18 @@
 "use server";
 
 import { GoogleGenerativeAI } from "@google/generative-ai";
-
-const apiKey = process.env.GEMINI_API_KEY || process.env.NEW_GEMINI_API_KEY;
-const genAI = new GoogleGenerativeAI(apiKey || "");
+import { withRetry, hasApiKey } from "@/lib/gemini-client";
 
 export const generateChatResponse = async (history: { role: "user" | "model"; parts: string }[], message: string) => {
-  if (!apiKey) {
+  if (!hasApiKey()) {
     return "Error: GEMINI_API_KEY is not set in .env.local";
   }
 
   try {
-    const model = genAI.getGenerativeModel({
-      model: "gemini-2.0-flash",
-      // System instruction to guide the AI to generate JSON for flows
-      systemInstruction: `
+    return await withRetry(
+      {
+        model: "gemini-2.0-flash",
+        systemInstruction: `
             You are an expert Frontend AI that builds React+Tailwind apps based on FLOWCHARTS.
     You will receive a compressed format called TOON:
     Nodes: id|type|label|x|y|color|description
@@ -31,38 +29,40 @@ export const generateChatResponse = async (history: { role: "user" | "model"; pa
             - Keep node labels concise. Use vibrant colors (hex codes) for nodes.
             - Spread nodes out visually so they don't overlap (increase x/y coordinates significantly).
             `
-    });
-
-    // Convert history to Gemini format (ensure role is 'user' or 'model')
-    const chat = model.startChat({
-      history: history.map(h => ({
-        role: h.role, // Logic simplified as input is typed "user" | "model"
-        parts: [{ text: h.parts }]
-      })),
-      generationConfig: {
-        maxOutputTokens: 8192,
       },
-    });
+      async (model) => {
+        // Convert history to Gemini format (ensure role is 'user' or 'model')
+        const chat = model.startChat({
+          history: history.map(h => ({
+            role: h.role, // Logic simplified as input is typed "user" | "model"
+            parts: [{ text: h.parts }]
+          })),
+          generationConfig: {
+            maxOutputTokens: 8192,
+          },
+        });
 
-    const result = await chat.sendMessage(message);
-    const response = await result.response;
-    return response.text();
+        const result = await chat.sendMessage(message);
+        const response = await result.response;
+        return response.text();
+      }
+    );
   } catch (error: any) {
     console.error("Gemini Chat Error:", error);
-    if (!apiKey) return "Authentication fail: API Key missing.";
     return `AI Error: ${error.message}`;
   }
 };
 
 export const generateAppBoilerplate = async (flowData: any) => {
-  if (!apiKey) {
+  if (!hasApiKey()) {
     return "// Error: GEMINI_API_KEY is not set.";
   }
 
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
-
-    const prompt = `
+    return await withRetry(
+      { model: "gemini-2.0-flash" },
+      async (model) => {
+        const prompt = `
     You are an expert React/Next.js developer.
     Analyze this workflow JSON and generate a single file React component (using Tailwind CSS) that implements this logic.
     
@@ -215,23 +215,23 @@ export const generateAppBoilerplate = async (flowData: any) => {
     - **E-commerce**: Product Grid using Product images. "Add to Cart" must show a "Added!" toast.
     `;
 
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const text = response.text();
+        const result = await model.generateContent(prompt);
+        const response = await result.response;
+        const text = response.text();
 
-    console.log("Gemini Raw Output:", text);
+        console.log("Gemini Raw Output:", text);
 
-    // Regex to extract code block
-    const match = text.match(/```(?:typescript|tsx|jsx|javascript|react)?([\s\S]*?)```/i);
+        // Regex to extract code block
+        const match = text.match(/```(?:typescript|tsx|jsx|javascript|react)?([\s\S]*?)```/i);
 
-    if (match && match[1]) {
-      return match[1].trim();
-    }
+        if (match && match[1]) {
+          return match[1].trim();
+        }
 
-
-    // Fallback: mostly clean raw text if no block found
-    return text.replace(/```(typescript|tsx|jsx|javascript|react)?/gi, "").replace(/```/g, "").trim();
-
+        // Fallback: mostly clean raw text if no block found
+        return text.replace(/```(typescript|tsx|jsx|javascript|react)?/gi, "").replace(/```/g, "").trim();
+      }
+    );
   } catch (error: any) {
     console.error("Gemini Generation Error:", error);
     return "// Error generating code. Please check server logs.";
@@ -239,11 +239,13 @@ export const generateAppBoilerplate = async (flowData: any) => {
 };
 
 export const suggestImage = async (query: string) => {
-  if (!apiKey) return null;
+  if (!hasApiKey()) return null;
 
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
-    const prompt = `
+    return await withRetry(
+      { model: "gemini-2.0-flash" },
+      async (model) => {
+        const prompt = `
         You are an image search assistant.
         The user wants an image for: "${query}".
         Return A SINGLE valid, high-quality Unsplash image URL that matches this description.
@@ -252,9 +254,11 @@ export const suggestImage = async (query: string) => {
         Example: https://images.unsplash.com/photo-123456789...
         `;
 
-    const result = await model.generateContent(prompt);
-    const text = result.response.text().trim();
-    return text.startsWith("http") ? text : null;
+        const result = await model.generateContent(prompt);
+        const text = result.response.text().trim();
+        return text.startsWith("http") ? text : null;
+      }
+    );
   } catch (error) {
     console.error("Image Suggestion Error:", error);
     return null; // Return null on failure
@@ -262,12 +266,13 @@ export const suggestImage = async (query: string) => {
 }
 
 export const generateFlowFromImage = async (base64Image: string) => {
-  if (!apiKey) return null;
+  if (!hasApiKey()) return null;
 
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
-
-    const prompt = `
+    return await withRetry(
+      { model: "gemini-2.0-flash" },
+      async (model) => {
+        const prompt = `
         Analyze this flowchart/diagram image and extract the nodes and edges into a JSON format compatible with React Flow.
         
         The JSON structure must be: 
@@ -287,35 +292,36 @@ export const generateFlowFromImage = async (base64Image: string) => {
         - Make sure "source" and "target" in edges match the "id" of nodes.
         `;
 
-    // Split the base64 string to get the mime type and data
-    // Expected format: "data:image/png;base64,..."
-    const match = base64Image.match(/^data:(image\/[a-z]+);base64,(.+)$/);
+        // Split the base64 string to get the mime type and data
+        // Expected format: "data:image/png;base64,..."
+        const match = base64Image.match(/^data:(image\/[a-z]+);base64,(.+)$/);
 
-    if (!match) {
-      throw new Error("Invalid image format");
-    }
-
-    const mimeType = match[1];
-    const data = match[2];
-
-    const result = await model.generateContent([
-      prompt,
-      {
-        inlineData: {
-          data: data,
-          mimeType: mimeType
+        if (!match) {
+          throw new Error("Invalid image format");
         }
+
+        const mimeType = match[1];
+        const data = match[2];
+
+        const result = await model.generateContent([
+          prompt,
+          {
+            inlineData: {
+              data: data,
+              mimeType: mimeType
+            }
+          }
+        ]);
+
+        const text = result.response.text();
+        const jsonMatch = text.match(/\{[\s\S]*\}/);
+
+        if (jsonMatch) {
+          return JSON.parse(jsonMatch[0]);
+        }
+        return null;
       }
-    ]);
-
-    const text = result.response.text();
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
-
-    if (jsonMatch) {
-      return JSON.parse(jsonMatch[0]);
-    }
-    return null;
-
+    );
   } catch (error) {
     console.error("Flow Image Generation Error:", error);
     return null;
@@ -323,11 +329,13 @@ export const generateFlowFromImage = async (base64Image: string) => {
 };
 
 export const suggestImprovements = async (code: string) => {
-  if (!apiKey) return ["Error: API Key missing"];
+  if (!hasApiKey()) return ["Error: API Key missing"];
 
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
-    const prompt = `
+    return await withRetry(
+      { model: "gemini-2.0-flash" },
+      async (model) => {
+        const prompt = `
         Analyze the following React component code and suggest 20 specific, high-impact improvements or features.
         Focus on UX, UI, or missing standard functionality.
         
@@ -338,10 +346,12 @@ export const suggestImprovements = async (code: string) => {
         ["Add dark mode support", "Improve button contrast", "Add a footer section", "Add form validation", ...]
         `;
 
-    const result = await model.generateContent(prompt);
-    const text = result.response.text();
-    const cleaned = text.replace(/```json|```/g, '').trim();
-    return JSON.parse(cleaned);
+        const result = await model.generateContent(prompt);
+        const text = result.response.text();
+        const cleaned = text.replace(/```json|```/g, '').trim();
+        return JSON.parse(cleaned);
+      }
+    );
   } catch (e) {
     console.error("Suggestion Error", e);
     return ["Add more content sections", "Improve color scheme", "Add interactive elements"];
@@ -349,11 +359,13 @@ export const suggestImprovements = async (code: string) => {
 };
 
 export const editReactComponent = async (code: string, userPrompt: string) => {
-  if (!apiKey) return code;
+  if (!hasApiKey()) return code;
 
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
-    const prompt = `
+    return await withRetry(
+      { model: "gemini-2.0-flash" },
+      async (model) => {
+        const prompt = `
         You are a Senior React Engineer.
         Using the existing code below, implement the following request: "${userPrompt}"
 
@@ -381,20 +393,21 @@ export const editReactComponent = async (code: string, userPrompt: string) => {
         ${code}
         `;
 
-    const result = await model.generateContent(prompt);
-    const text = result.response.text();
+        const result = await model.generateContent(prompt);
+        const text = result.response.text();
 
-    // Robust extraction of code block
-    const match = text.match(/```(?:tsx|jsx|javascript|typescript)?\s*([\s\S]*?)```/);
-    if (match && match[1]) {
-      return match[1].trim();
-    }
+        // Robust extraction of code block
+        const match = text.match(/```(?:tsx|jsx|javascript|typescript)?\s*([\s\S]*?)```/);
+        if (match && match[1]) {
+          return match[1].trim();
+        }
 
-    // Fallback: cleanup if no strict block found
-    return text.replace(/^```[a-z]*\s*/i, "").replace(/```\s*$/, "").trim();
+        // Fallback: cleanup if no strict block found
+        return text.replace(/^```[a-z]*\s*/i, "").replace(/```\s*$/, "").trim();
+      }
+    );
   } catch (e) {
     console.error("Edit Error", e);
     throw e;
   }
 };
-

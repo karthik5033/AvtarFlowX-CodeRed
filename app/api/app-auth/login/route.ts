@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
         }
 
         // Verify password
-        const isValid = await bcrypt.compare(password, result.data.password_hash);
+        const isValid = await bcrypt.compare(password, (result.data as any).password_hash);
 
         if (!isValid) {
             return NextResponse.json(
@@ -38,9 +38,9 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({
             success: true,
             user: {
-                id: result.data.id,
-                email: result.data.email,
-                name: result.data.name,
+                id: (result.data as any).id,
+                email: (result.data as any).email,
+                name: (result.data as any).name,
             },
         });
     } catch (error: any) {
