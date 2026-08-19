@@ -18,6 +18,7 @@ import {
 } from "@xyflow/react";
 
 import TextNode from "./nodes/TextNode";
+import "@xyflow/react/dist/style.css";
 
 const nodeTypes = {
   textNode: TextNode,
@@ -31,6 +32,8 @@ export default function FlowCanvas() {
     y: Math.round(position.y / gridSize) * gridSize,
   });
 
+  const [nodes, setNodes] = React.useState<any[]>([]);
+
   // update node data helper
   const updateNodeData = React.useCallback((id: string, newData: any) => {
     setNodes((nds: any[]) =>
@@ -39,8 +42,6 @@ export default function FlowCanvas() {
       )
     );
   }, []);
-
-  const [nodes, setNodes] = React.useState<any[]>([]);
 
   React.useEffect(() => {
     const initial = [
