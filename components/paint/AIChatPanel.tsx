@@ -12,13 +12,34 @@ interface AIChatPanelProps {
     onOpenTemplates?: () => void;
 }
 
+const GENERATING_STEPS = [
+    "Thinking & analyzing requirements...",
+    "Architecting workflow logic...",
+    "Designing component nodes...",
+    "Generating step specifications...",
+    "Connecting logic pathways...",
+    "Optimizing flowchart layout..."
+];
+
 export default function AIChatPanel({ onApplyFlow, forceMessage, onOpenTemplates }: AIChatPanelProps) {
     const [messages, setMessages] = useState<{ role: "user" | "ai" | "model"; text: string }[]>([
         { role: "ai", text: "Hi! I'm your AvatarFlow Agent. I can help you build workflows, generate boilerplate, or explain concepts. What are we building today?" }
     ]);
     const [input, setInput] = useState("");
     const [isTyping, setIsTyping] = useState(false);
+    const [typingStepIndex, setTypingStepIndex] = useState(0);
     const messagesEndRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        if (!isTyping) {
+            setTypingStepIndex(0);
+            return;
+        }
+        const interval = setInterval(() => {
+            setTypingStepIndex((prev) => (prev + 1) % GENERATING_STEPS.length);
+        }, 1800);
+        return () => clearInterval(interval);
+    }, [isTyping]);
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -193,14 +214,23 @@ export default function AIChatPanel({ onApplyFlow, forceMessage, onOpenTemplates
                 })}
 
                 {isTyping && (
-                    <div className="flex gap-3">
-                        <div className="w-8 h-8 rounded-full bg-background border border-border text-primary flex items-center justify-center shadow-sm">
-                            <Sparkles className="w-4 h-4" />
+                    <div className="flex gap-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                        <div className="w-8 h-8 rounded-full bg-primary/10 border border-primary/20 text-primary flex items-center justify-center shadow-sm flex-shrink-0">
+                            <Sparkles className="w-4 h-4 animate-spin" style={{ animationDuration: '3s' }} />
                         </div>
-                        <div className="p-3 bg-muted border border-border rounded-2xl rounded-tl-none shadow-sm flex items-center gap-1 h-10">
-                            <div className="w-1.5 h-1.5 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                            <div className="w-1.5 h-1.5 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                            <div className="w-1.5 h-1.5 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                        <div className="p-3.5 bg-card border border-primary/20 rounded-2xl rounded-tl-none shadow-md flex flex-col gap-2 max-w-[88%]">
+                            <div className="flex items-center gap-2">
+                                <div className="flex gap-1 items-center">
+                                    <span className="w-2 h-2 rounded-full bg-primary animate-bounce" style={{ animationDelay: '0ms' }} />
+                                    <span className="w-2 h-2 rounded-full bg-primary animate-bounce" style={{ animationDelay: '150ms' }} />
+                                    <span className="w-2 h-2 rounded-full bg-primary animate-bounce" style={{ animationDelay: '300ms' }} />
+                                </div>
+                                <span className="text-xs font-semibold text-primary">AI Agent Thinking</span>
+                            </div>
+                            <div className="text-xs text-muted-foreground transition-all duration-300 flex items-center gap-1.5 font-medium">
+                                <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse flex-shrink-0" />
+                                <span>{GENERATING_STEPS[typingStepIndex]}</span>
+                            </div>
                         </div>
                     </div>
                 )}

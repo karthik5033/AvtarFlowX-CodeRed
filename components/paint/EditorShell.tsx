@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { Node, Edge, ReactFlowInstance } from "reactflow";
-import { Play, Search, Settings, ChevronRight, ChevronDown, Monitor, Smartphone, Maximize2, Plus, Undo, Redo, Wand2, Sparkles } from "lucide-react";
+import { Play, Search, Settings, ChevronRight, ChevronDown, Monitor, Smartphone, Maximize2, Plus, Undo, Redo, Wand2, Sparkles, X, ArrowRight } from "lucide-react";
 import Link from "next/link";
 
 import FlowCanvas from "./FlowCanvas";
@@ -45,6 +45,188 @@ function PaletteItem({ label, icon, onClick }: { label: string; icon: any; onCli
             </div>
         </div>
     );
+}
+
+const WORKFLOW_CATEGORIES = [
+    {
+        category: "Portfolio & Business",
+        icon: "💼",
+        workflows: [
+            { label: "Portfolio Website", prompt: "Create a detailed flowchart for a modern Portfolio website with a Hero section, About Me, Project Gallery (grid), and Contact Form." },
+            { label: "Company Website", prompt: "Build a corporate website flowchart with Navbar, Hero Banner, Services Section (3 columns), Team Grid, and Contact Page." },
+            { label: "Personal Blog", prompt: "Design a blog flowchart with Header, Blog Post List (cards), Individual Post View with comments, and Sidebar with categories." },
+            { label: "Agency Landing Page", prompt: "Create an agency landing page with Sticky Nav, Hero CTA, Case Studies carousel, Client Logos, and Footer with links." },
+            { label: "Consulting Site", prompt: "Build a consultant website with Service Offerings, Testimonial Section, Booking Calendar, and Lead Capture Form." }
+        ]
+    },
+    {
+        category: "E-commerce & Retail",
+        icon: "🛒",
+        workflows: [
+            { label: "E-commerce Store", prompt: "Generate an E-commerce flowchart: Product Listing Page with filters → Product Details → Shopping Cart → Checkout." },
+            { label: "Product Catalog", prompt: "Create a product catalog with Grid/List toggle, Category Navigation, Search/Filter, and Quick View modals." },
+            { label: "Checkout Flow", prompt: "Design a multi-step checkout: Cart Review → Shipping Info → Payment → Order Confirmation with email." },
+            { label: "Marketplace", prompt: "Build a marketplace flowchart with Vendor Listings, Product Search, Reviews/Ratings, and Seller Dashboard." },
+            { label: "Digital Store", prompt: "Create a digital products store with Instant Downloads, License Keys, Purchase History, and File Management." }
+        ]
+    },
+    {
+        category: "SaaS & Dashboards",
+        icon: "📊",
+        workflows: [
+            { label: "SaaS Dashboard", prompt: "Build a flowchart for a comprehensive SaaS Dashboard with a sidebar, top metrics cards, revenue chart, and recent activity table." },
+            { label: "Analytics Dashboard", prompt: "Create an analytics dashboard with Real-time Stats, Line/Bar Charts, Data Tables, and Export functionality." },
+            { label: "Admin Panel", prompt: "Design an admin panel with User Management Table, Settings Pages, Activity Logs, and Notification Center." },
+            { label: "Project Dashboard", prompt: "Build a project management dashboard with Task Overview, Team Members, Progress Charts, and Calendar View." },
+            { label: "CRM Dashboard", prompt: "Create a CRM dashboard with Sales Pipeline, Contact List, Deal Tracker, and Performance Metrics." }
+        ]
+    },
+    {
+        category: "Social & Community",
+        icon: "👥",
+        workflows: [
+            { label: "Social Media Feed", prompt: "Design a flowchart for a social media feed with a 'Post Input' area, infinite scroll stream of posts (avatar + content), and a right sidebar for trends." },
+            { label: "Community Forum", prompt: "Create a forum with Thread List, Post Detail View, Reply System, User Profiles, and Moderation Tools." },
+            { label: "Chat Application", prompt: "Build a real-time chat app with Contacts List, Message Threads, Typing Indicators, and File Sharing." },
+            { label: "Event Platform", prompt: "Design an events platform with Calendar View, Event Details, RSVP System, and Attendee List." },
+            { label: "Membership Site", prompt: "Create a membership site with Login Wall, Member Directory, Content Library, and Discussion Boards." }
+        ]
+    },
+    {
+        category: "Productivity & Tools",
+        icon: "⚡",
+        workflows: [
+            { label: "Task Manager (Kanban)", prompt: "Create a flowchart for a Kanban-style Task Manager with columns for 'To Do', 'In Progress', and 'Done', including drag-and-drop visuals." },
+            { label: "Note Taking App", prompt: "Build a notes app with Sidebar Navigation, Rich Text Editor, Search, Tags, and Cloud Sync indicator." },
+            { label: "Calendar & Scheduling", prompt: "Design a calendar app with Month/Week/Day views, Event Creation Modal, Reminders, and Google Calendar Sync." },
+            { label: "Document Manager", prompt: "Create a document manager with Folder Tree, File Grid/List, Upload Area, Preview Panel, and Version History." },
+            { label: "Time Tracker", prompt: "Build a time tracking app with Timer Widget, Project Selection, Activity Log, Reports, and Billing Integration." }
+        ]
+    },
+    {
+        category: "Authentication & Onboarding",
+        icon: "🔐",
+        workflows: [
+            { label: "Login & Auth Flow", prompt: "Build a secure Authentication flowchart: Login Screen with social buttons → Forgot Password → Two-Factor Verification." },
+            { label: "Signup & Onboarding", prompt: "Create a multi-step signup: Email/Password → Profile Setup → Preferences → Welcome Tour with tooltips." },
+            { label: "User Profile", prompt: "Design a user profile page with Avatar Upload, Bio Editor, Account Settings, Privacy Controls, and Activity History." },
+            { label: "Password Reset", prompt: "Build password reset flow: Email Input → Verification Code → New Password → Success Confirmation." },
+            { label: "Social Login", prompt: "Create social auth integration with Google/Facebook/GitHub buttons, Account Linking, and Permission Requests." }
+        ]
+    },
+    {
+        category: "Marketing & Landing Pages",
+        icon: "🚀",
+        workflows: [
+            { label: "Landing Page (Startup)", prompt: "Create a high-conversion Startup Landing Page flowchart with: Sticky Navbar, Value Prop Hero, Feature Grid, Testimonials, and Pricing Table." },
+            { label: "Product Launch", prompt: "Build a product launch page with Countdown Timer, Pre-order Form, Feature Showcase, and Email Signup." },
+            { label: "Lead Generation", prompt: "Design a lead gen page with Hero Form, Benefits List, Social Proof, FAQ Section, and Thank You Modal." },
+            { label: "Webinar Registration", prompt: "Create webinar signup with Speaker Bio, Agenda, Registration Form, Calendar Add, and Confirmation Email." },
+            { label: "App Download Page", prompt: "Build an app landing page with Screenshots Carousel, Features Grid, App Store Badges, and Reviews Section." }
+        ]
+    },
+    {
+        category: "AI & Chat Interfaces",
+        icon: "🤖",
+        workflows: [
+            { label: "AI Chat Interface", prompt: "Design a flowchart for a ChatGPT-style AI interface with a left sidebar for history and a main chat area with input box and message bubbles." },
+            { label: "Chatbot Widget", prompt: "Create an embedded chatbot with Floating Button, Chat Window, Quick Replies, and Human Handoff option." },
+            { label: "AI Assistant Dashboard", prompt: "Build an AI assistant dashboard with Conversation History, Model Settings, Prompt Templates, and Usage Analytics." },
+            { label: "Voice Chat App", prompt: "Design a voice chat interface with Recording Button, Waveform Visualization, Transcript Display, and Voice Settings." },
+            { label: "AI Content Generator", prompt: "Create a content generator with Input Form, Generation Options, Preview Panel, Export Buttons, and History Log." }
+        ]
+    }
+];
+
+function layoutFlowBalanced(nodes: Node[], edges: Edge[]): Node[] {
+    if (!nodes || nodes.length === 0) return [];
+    if (nodes.length === 1) {
+        return [{ ...nodes[0], position: { x: 300, y: 150 } }];
+    }
+
+    // 1. Build adjacency and in-degree maps
+    const nodeMap = new Map<string, Node>();
+    const outgoing = new Map<string, string[]>();
+    const inDegree = new Map<string, number>();
+
+    nodes.forEach((n) => {
+        nodeMap.set(n.id, n);
+        outgoing.set(n.id, []);
+        inDegree.set(n.id, 0);
+    });
+
+    edges.forEach((e) => {
+        if (outgoing.has(e.source) && inDegree.has(e.target)) {
+            outgoing.get(e.source)!.push(e.target);
+            inDegree.set(e.target, (inDegree.get(e.target) || 0) + 1);
+        }
+    });
+
+    // 2. Order nodes using topological BFS
+    const queue: string[] = [];
+    inDegree.forEach((deg, id) => {
+        if (deg === 0) queue.push(id);
+    });
+
+    if (queue.length === 0 && nodes.length > 0) {
+        queue.push(nodes[0].id);
+    }
+
+    const orderedIds: string[] = [];
+    const visited = new Set<string>();
+
+    while (queue.length > 0) {
+        const curr = queue.shift()!;
+        if (visited.has(curr)) continue;
+        visited.add(curr);
+        orderedIds.push(curr);
+
+        const children = outgoing.get(curr) || [];
+        children.forEach((child) => {
+            if (!visited.has(child)) {
+                queue.push(child);
+            }
+        });
+    }
+
+    // Add any unconnected/remaining nodes
+    nodes.forEach((n) => {
+        if (!visited.has(n.id)) {
+            orderedIds.push(n.id);
+            visited.add(n.id);
+        }
+    });
+
+    // 3. Compute optimal number of columns to balance width and height equally
+    const n = orderedIds.length;
+    let cols = 3;
+    if (n <= 2) cols = n;
+    else if (n <= 4) cols = 2;
+    else if (n <= 6) cols = 3;
+    else if (n <= 9) cols = 3;
+    else if (n <= 12) cols = 4;
+    else cols = Math.max(3, Math.min(5, Math.ceil(Math.sqrt(n * 1.3))));
+
+    const colWidth = 420; // 300px node width + 120px gap
+    const rowHeight = 280; // ~180px node height + 100px gap
+    const startX = 120;
+    const startY = 100;
+
+    return orderedIds.map((id, index) => {
+        const node = nodeMap.get(id)!;
+        const row = Math.floor(index / cols);
+        const colInRow = index % cols;
+        // Serpentine S-Curve (even rows left->right, odd rows right->left)
+        const col = (row % 2 === 0) ? colInRow : (cols - 1 - colInRow);
+
+        const x = startX + col * colWidth;
+        const y = startY + row * rowHeight;
+
+        return {
+            ...node,
+            position: { x, y }
+        };
+    });
 }
 
 export default function EditorShell() {
@@ -432,42 +614,14 @@ export default function EditorShell() {
                 ) : (
                     <PanelGroup direction="horizontal">
                         {/* ---------------- LEFT SIDEBAR ---------------- */}
-                        <Panel ref={leftPanelRef} defaultSize={25} minSize={15} maxSize={35} collapsible={true} className="flex flex-col bg-muted/10 border-r border-border">
+                        <Panel ref={leftPanelRef} defaultSize={32} minSize={20} maxSize={45} collapsible={true} className="flex flex-col bg-muted/10 border-r border-border">
                             <div className="flex-1 flex flex-col overflow-hidden h-full">
                                 <AIChatPanel
                                     onOpenTemplates={() => setShowTemplates(true)}
                                     onApplyFlow={(newNodes, newEdges) => {
-                                        // 1. Auto Layout with Dagre
+                                        // Auto Layout with Balanced 2D Spread (Equal Horizontal & Vertical)
                                         if (newNodes.length > 0) {
-                                            const dagreGraph = new dagre.graphlib.Graph();
-                                            dagreGraph.setDefaultEdgeLabel(() => ({}));
-                                            dagreGraph.setGraph({ rankdir: "TB", nodesep: 300, ranksep: 200, align: "UL" });
-
-                                            newNodes.forEach((node) => {
-                                                const desc = node.data?.description || "";
-                                                // Estimate height: base height + (lines * line height)
-                                                const estHeight = 200 + Math.ceil(desc.length / 40) * 20;
-                                                dagreGraph.setNode(node.id, { width: 300, height: estHeight });
-                                            });
-
-                                            newEdges.forEach((edge) => {
-                                                dagreGraph.setEdge(edge.source, edge.target);
-                                            });
-
-                                            dagre.layout(dagreGraph);
-
-                                            const layoutedNodes = newNodes.map((node) => {
-                                                const nodeWithPosition = dagreGraph.node(node.id);
-                                                const desc = node.data?.description || "";
-                                                const estHeight = 200 + Math.ceil(desc.length / 40) * 20;
-                                                return {
-                                                    ...node,
-                                                    position: {
-                                                        x: nodeWithPosition.x - 150 + 100, // Center x (300/2)
-                                                        y: nodeWithPosition.y - (estHeight / 2) + 100, // Center y
-                                                    },
-                                                };
-                                            });
+                                            const layoutedNodes = layoutFlowBalanced(newNodes, newEdges);
                                             setNodes(layoutedNodes);
                                         } else {
                                             setNodes(newNodes);
@@ -477,7 +631,6 @@ export default function EditorShell() {
 
                                         // 2. Force Fit View
                                         if (reactFlowInstance) {
-                                            // Small delay to allow React Render cycle to complete
                                             setTimeout(() => {
                                                 reactFlowInstance.fitView({ padding: 0.2, duration: 800 });
                                             }, 200);
@@ -493,186 +646,110 @@ export default function EditorShell() {
                         </PanelResizeHandle>
 
                         {/* ---------------- CENTER CANVAS ---------------- */}
-                        <Panel defaultSize={75} minSize={30} className="bg-muted/10 relative flex flex-col">
+                        <Panel defaultSize={68} minSize={30} className="bg-muted/10 relative flex flex-col">
                             {showTemplates && (
-                                <div className="absolute top-4 left-4 w-[360px] bottom-4 z-50 shadow-2xl bg-background border border-border rounded-xl flex flex-col overflow-hidden animate-in slide-in-from-left-8 fade-in pointer-events-auto">
-                                    <div className="p-4 border-b border-border bg-muted/30 flex items-center justify-between">
-                                        <h2 className="text-sm font-bold text-foreground flex items-center gap-2">
-                                            <Sparkles className="w-4 h-4 text-primary" />
-                                            Templates
-                                        </h2>
-                                        <button onClick={() => setShowTemplates(false)} className="text-muted-foreground hover:text-foreground">
-                                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                            </svg>
-                                        </button>
-                                    </div>
-                                    <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
-                                        {/* Flow Builder Intro */}
-                                <div className="mb-8 p-4 bg-card rounded-xl border border-border shadow-sm">
-                                    <h2 className="text-base font-bold mb-2 flex items-center gap-2">
-                                        <svg className="w-5 h-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM14 5a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 16a1 1 0 011-1h4a1 1 0 011 1v3a1 1 0 01-1 1H5a1 1 0 01-1-1v-3zM14 16a1 1 0 011-1h4a1 1 0 011 1v3a1 1 0 01-1 1h-4a1 1 0 01-1-1v-3z" />
-                                        </svg>
-                                        Workflow Builder
-                                    </h2>
-                                    <p className="text-sm text-muted-foreground leading-relaxed">Select components to build your app logic.</p>
-                                </div>
-
-                                {/* Common Workflows - Accordion Style */}
-                                <div className="mb-6">
-                                    <div className="flex items-center gap-2 mb-4">
-                                        <div className="h-px flex-1 bg-gradient-to-r from-transparent via-border to-transparent"></div>
-                                        <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider px-2">Common Workflows</h3>
-                                        <div className="h-px flex-1 bg-gradient-to-r from-transparent via-border to-transparent"></div>
-                                    </div>
-                                    <div className="space-y-2">
-                                        {[
-                                            {
-                                                category: "Portfolio & Business",
-                                                icon: "💼",
-                                                workflows: [
-                                                    { label: "Portfolio Website", prompt: "Create a detailed flowchart for a modern Portfolio website with a Hero section, About Me, Project Gallery (grid), and Contact Form." },
-                                                    { label: "Company Website", prompt: "Build a corporate website flowchart with Navbar, Hero Banner, Services Section (3 columns), Team Grid, and Contact Page." },
-                                                    { label: "Personal Blog", prompt: "Design a blog flowchart with Header, Blog Post List (cards), Individual Post View with comments, and Sidebar with categories." },
-                                                    { label: "Agency Landing Page", prompt: "Create an agency landing page with Sticky Nav, Hero CTA, Case Studies carousel, Client Logos, and Footer with links." },
-                                                    { label: "Consulting Site", prompt: "Build a consultant website with Service Offerings, Testimonial Section, Booking Calendar, and Lead Capture Form." }
-                                                ]
-                                            },
-                                            {
-                                                category: "E-commerce & Retail",
-                                                icon: "🛒",
-                                                workflows: [
-                                                    { label: "E-commerce Store", prompt: "Generate an E-commerce flowchart: Product Listing Page with filters → Product Details → Shopping Cart → Checkout." },
-                                                    { label: "Product Catalog", prompt: "Create a product catalog with Grid/List toggle, Category Navigation, Search/Filter, and Quick View modals." },
-                                                    { label: "Checkout Flow", prompt: "Design a multi-step checkout: Cart Review → Shipping Info → Payment → Order Confirmation with email." },
-                                                    { label: "Marketplace", prompt: "Build a marketplace flowchart with Vendor Listings, Product Search, Reviews/Ratings, and Seller Dashboard." },
-                                                    { label: "Digital Store", prompt: "Create a digital products store with Instant Downloads, License Keys, Purchase History, and File Management." }
-                                                ]
-                                            },
-                                            {
-                                                category: "SaaS & Dashboards",
-                                                icon: "📊",
-                                                workflows: [
-                                                    { label: "SaaS Dashboard", prompt: "Build a flowchart for a comprehensive SaaS Dashboard with a sidebar, top metrics cards, revenue chart, and recent activity table." },
-                                                    { label: "Analytics Dashboard", prompt: "Create an analytics dashboard with Real-time Stats, Line/Bar Charts, Data Tables, and Export functionality." },
-                                                    { label: "Admin Panel", prompt: "Design an admin panel with User Management Table, Settings Pages, Activity Logs, and Notification Center." },
-                                                    { label: "Project Dashboard", prompt: "Build a project management dashboard with Task Overview, Team Members, Progress Charts, and Calendar View." },
-                                                    { label: "CRM Dashboard", prompt: "Create a CRM dashboard with Sales Pipeline, Contact List, Deal Tracker, and Performance Metrics." }
-                                                ]
-                                            },
-                                            {
-                                                category: "Social & Community",
-                                                icon: "👥",
-                                                workflows: [
-                                                    { label: "Social Media Feed", prompt: "Design a flowchart for a social media feed with a 'Post Input' area, infinite scroll stream of posts (avatar + content), and a right sidebar for trends." },
-                                                    { label: "Community Forum", prompt: "Create a forum with Thread List, Post Detail View, Reply System, User Profiles, and Moderation Tools." },
-                                                    { label: "Chat Application", prompt: "Build a real-time chat app with Contacts List, Message Threads, Typing Indicators, and File Sharing." },
-                                                    { label: "Event Platform", prompt: "Design an events platform with Calendar View, Event Details, RSVP System, and Attendee List." },
-                                                    { label: "Membership Site", prompt: "Create a membership site with Login Wall, Member Directory, Content Library, and Discussion Boards." }
-                                                ]
-                                            },
-                                            {
-                                                category: "Productivity & Tools",
-                                                icon: "⚡",
-                                                workflows: [
-                                                    { label: "Task Manager (Kanban)", prompt: "Create a flowchart for a Kanban-style Task Manager with columns for 'To Do', 'In Progress', and 'Done', including drag-and-drop visuals." },
-                                                    { label: "Note Taking App", prompt: "Build a notes app with Sidebar Navigation, Rich Text Editor, Search, Tags, and Cloud Sync indicator." },
-                                                    { label: "Calendar & Scheduling", prompt: "Design a calendar app with Month/Week/Day views, Event Creation Modal, Reminders, and Google Calendar Sync." },
-                                                    { label: "Document Manager", prompt: "Create a document manager with Folder Tree, File Grid/List, Upload Area, Preview Panel, and Version History." },
-                                                    { label: "Time Tracker", prompt: "Build a time tracking app with Timer Widget, Project Selection, Activity Log, Reports, and Billing Integration." }
-                                                ]
-                                            },
-                                            {
-                                                category: "Authentication & Onboarding",
-                                                icon: "🔐",
-                                                workflows: [
-                                                    { label: "Login & Auth Flow", prompt: "Build a secure Authentication flowchart: Login Screen with social buttons → Forgot Password → Two-Factor Verification." },
-                                                    { label: "Signup & Onboarding", prompt: "Create a multi-step signup: Email/Password → Profile Setup → Preferences → Welcome Tour with tooltips." },
-                                                    { label: "User Profile", prompt: "Design a user profile page with Avatar Upload, Bio Editor, Account Settings, Privacy Controls, and Activity History." },
-                                                    { label: "Password Reset", prompt: "Build password reset flow: Email Input → Verification Code → New Password → Success Confirmation." },
-                                                    { label: "Social Login", prompt: "Create social auth integration with Google/Facebook/GitHub buttons, Account Linking, and Permission Requests." }
-                                                ]
-                                            },
-                                            {
-                                                category: "Marketing & Landing Pages",
-                                                icon: "🚀",
-                                                workflows: [
-                                                    { label: "Landing Page (Startup)", prompt: "Create a high-conversion Startup Landing Page flowchart with: Sticky Navbar, Value Prop Hero, Feature Grid, Testimonials, and Pricing Table." },
-                                                    { label: "Product Launch", prompt: "Build a product launch page with Countdown Timer, Pre-order Form, Feature Showcase, and Email Signup." },
-                                                    { label: "Lead Generation", prompt: "Design a lead gen page with Hero Form, Benefits List, Social Proof, FAQ Section, and Thank You Modal." },
-                                                    { label: "Webinar Registration", prompt: "Create webinar signup with Speaker Bio, Agenda, Registration Form, Calendar Add, and Confirmation Email." },
-                                                    { label: "App Download Page", prompt: "Build an app landing page with Screenshots Carousel, Features Grid, App Store Badges, and Reviews Section." }
-                                                ]
-                                            },
-                                            {
-                                                category: "AI & Chat Interfaces",
-                                                icon: "🤖",
-                                                workflows: [
-                                                    { label: "AI Chat Interface", prompt: "Design a flowchart for a ChatGPT-style AI interface with a left sidebar for history and a main chat area with input box and message bubbles." },
-                                                    { label: "Chatbot Widget", prompt: "Create an embedded chatbot with Floating Button, Chat Window, Quick Replies, and Human Handoff option." },
-                                                    { label: "AI Assistant Dashboard", prompt: "Build an AI assistant dashboard with Conversation History, Model Settings, Prompt Templates, and Usage Analytics." },
-                                                    { label: "Voice Chat App", prompt: "Design a voice chat interface with Recording Button, Waveform Visualization, Transcript Display, and Voice Settings." },
-                                                    { label: "AI Content Generator", prompt: "Create a content generator with Input Form, Generation Options, Preview Panel, Export Buttons, and History Log." }
-                                                ]
-                                            }
-                                        ].map((group, groupIndex) => (
-                                            <div key={groupIndex} className="border border-border rounded-lg overflow-hidden bg-card shadow-sm hover:shadow-md transition-all">
-                                                {/* Category Header - Clickable */}
-                                                <button
-                                                    onClick={() => setExpandedWorkflow(expandedWorkflow === group.category ? null : group.category)}
-                                                    className={`w-full flex items-center justify-between p-4 transition-all ${expandedWorkflow === group.category
-                                                        ? 'bg-muted/50'
-                                                        : 'hover:bg-muted/30'
+                                <div className="absolute top-4 left-4 bottom-4 z-50 flex items-stretch gap-3 pointer-events-none">
+                                    {/* Pane 1: Workflow Categories */}
+                                    <div className="w-[300px] shadow-2xl bg-background border border-border rounded-xl flex flex-col overflow-hidden animate-in slide-in-from-left-8 fade-in pointer-events-auto">
+                                        <div className="p-4 border-b border-border bg-muted/30 flex items-center justify-between">
+                                            <h2 className="text-sm font-bold text-foreground flex items-center gap-2">
+                                                <Sparkles className="w-4 h-4 text-primary" />
+                                                Workflow Builder
+                                            </h2>
+                                            <button
+                                                onClick={() => {
+                                                    setShowTemplates(false);
+                                                    setExpandedWorkflow(null);
+                                                }}
+                                                className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                                                title="Close"
+                                            >
+                                                <X className="w-4 h-4" />
+                                            </button>
+                                        </div>
+                                        <div className="p-3 bg-muted/20 border-b border-border text-xs text-muted-foreground font-medium">
+                                            Select a category to view workflow ideas
+                                        </div>
+                                        <div className="flex-1 overflow-y-auto p-3 space-y-2 custom-scrollbar">
+                                            {WORKFLOW_CATEGORIES.map((group) => {
+                                                const isSelected = expandedWorkflow === group.category;
+                                                return (
+                                                    <button
+                                                        key={group.category}
+                                                        onClick={() => setExpandedWorkflow(isSelected ? null : group.category)}
+                                                        className={`w-full flex items-center justify-between p-3 rounded-lg border transition-all text-left group ${
+                                                            isSelected
+                                                                ? 'bg-primary/10 border-primary shadow-sm text-primary ring-1 ring-primary/30'
+                                                                : 'bg-card border-border hover:border-primary/40 hover:bg-muted/40 text-foreground'
                                                         }`}
-                                                >
-                                                    <div className="flex items-center gap-3">
-                                                        <div className={`w-9 h-9 rounded-lg flex items-center justify-center text-lg shadow-sm transition-all ${expandedWorkflow === group.category
-                                                            ? 'bg-primary text-primary-foreground scale-110'
-                                                            : 'bg-muted text-muted-foreground'
+                                                    >
+                                                        <div className="flex items-center gap-3">
+                                                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-base transition-all ${
+                                                                isSelected ? 'bg-primary text-primary-foreground scale-105' : 'bg-muted'
                                                             }`}>
-                                                            {group.icon}
+                                                                {group.icon}
+                                                            </div>
+                                                            <span className="font-semibold text-xs sm:text-sm">{group.category}</span>
                                                         </div>
-                                                        <span className={`font-semibold text-sm transition-colors ${expandedWorkflow === group.category ? 'text-primary' : 'text-foreground'
-                                                            }`}>{group.category}</span>
-                                                    </div>
-                                                    {expandedWorkflow === group.category ? (
-                                                        <ChevronDown className="w-4 h-4 text-primary" />
-                                                    ) : (
-                                                        <ChevronRight className="w-4 h-4 text-muted-foreground" />
-                                                    )}
-                                                </button>
+                                                        <ChevronRight className={`w-4 h-4 transition-transform ${isSelected ? 'text-primary translate-x-1' : 'text-muted-foreground group-hover:text-foreground group-hover:translate-x-0.5'}`} />
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
 
-                                                {/* Workflows - Shown when expanded */}
-                                                {expandedWorkflow === group.category && (
-                                                    <div className="border-t border-border p-3 space-y-2 bg-muted/10">
-                                                        {group.workflows.map((item, i) => (
-                                                            <button
-                                                                key={i}
-                                                                onClick={() => {
-                                                                    setPendingChatMsg(item.prompt);
-                                                                    setTimeout(() => setPendingChatMsg(null), 500);
-                                                                }}
-                                                                className="w-full text-left px-4 py-2.5 text-xs font-medium text-foreground bg-background border border-border rounded-lg hover:border-primary/50 hover:text-primary transition-all group shadow-sm hover:shadow-md"
-                                                            >
-                                                                <div className="flex items-center justify-between">
-                                                                    <span>{item.label}</span>
-                                                                    <svg className="w-3 h-3 text-muted-foreground group-hover:text-primary opacity-0 group-hover:opacity-100 transition-all" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                                                                    </svg>
+                                    {/* Pane 2: Ideas for selected category (opens to the right of Pane 1) */}
+                                    {expandedWorkflow && (
+                                        <div className="w-[360px] shadow-2xl bg-background border border-border rounded-xl flex flex-col overflow-hidden animate-in slide-in-from-left-4 fade-in pointer-events-auto">
+                                            {(() => {
+                                                const currentGroup = WORKFLOW_CATEGORIES.find(g => g.category === expandedWorkflow);
+                                                if (!currentGroup) return null;
+                                                return (
+                                                    <>
+                                                        <div className="p-4 border-b border-border bg-muted/30 flex items-center justify-between">
+                                                            <div className="flex items-center gap-2.5">
+                                                                <span className="text-xl">{currentGroup.icon}</span>
+                                                                <div>
+                                                                    <h3 className="text-sm font-bold text-foreground leading-none">{currentGroup.category}</h3>
+                                                                    <span className="text-[11px] text-muted-foreground font-medium">{currentGroup.workflows.length} workflow ideas</span>
                                                                 </div>
+                                                            </div>
+                                                            <button
+                                                                onClick={() => setExpandedWorkflow(null)}
+                                                                className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                                                                title="Close ideas pane"
+                                                            >
+                                                                <X className="w-4 h-4" />
                                                             </button>
-                                                        ))}
-                                                    </div>
-                                                )}
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-
-
-                                
-                                    </div>
+                                                        </div>
+                                                        <div className="p-3 bg-muted/20 border-b border-border text-xs text-muted-foreground">
+                                                            Click an idea to generate its flowchart prompt
+                                                        </div>
+                                                        <div className="flex-1 overflow-y-auto p-3 space-y-2.5 custom-scrollbar">
+                                                            {currentGroup.workflows.map((item, i) => (
+                                                                <button
+                                                                    key={i}
+                                                                    onClick={() => {
+                                                                        setPendingChatMsg(item.prompt);
+                                                                        setTimeout(() => setPendingChatMsg(null), 500);
+                                                                        setShowTemplates(false);
+                                                                        setExpandedWorkflow(null);
+                                                                    }}
+                                                                    className="w-full text-left p-3.5 text-xs font-medium text-foreground bg-card border border-border rounded-lg hover:border-primary/60 hover:shadow-md transition-all group hover:bg-muted/20"
+                                                                >
+                                                                    <div className="flex items-center justify-between mb-1.5">
+                                                                        <span className="font-bold text-sm text-foreground group-hover:text-primary transition-colors">{item.label}</span>
+                                                                        <ArrowRight className="w-4 h-4 text-primary opacity-0 group-hover:opacity-100 transition-all -translate-x-1 group-hover:translate-x-0" />
+                                                                    </div>
+                                                                    <p className="text-[11px] text-muted-foreground line-clamp-2 leading-relaxed">{item.prompt}</p>
+                                                                </button>
+                                                            ))}
+                                                        </div>
+                                                    </>
+                                                );
+                                            })()}
+                                        </div>
+                                    )}
                                 </div>
                             )}
 

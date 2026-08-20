@@ -33,10 +33,19 @@ const CustomNode = ({ data, selected }: NodeProps) => {
       }}
     >
       <div className="h-full w-full relative py-3">
+        {/* Top Handle */}
+        <Handle
+          type="target"
+          position={Position.Top}
+          id="top"
+          className="!bg-muted-foreground hover:!bg-primary !w-3 !h-3 rounded-full opacity-0 group-hover:opacity-100 transition-all border-2 border-background"
+        />
+
         {/* Left Handle (Target) */}
         <Handle
           type="target"
           position={Position.Left}
+          id="left"
           className="!bg-muted-foreground hover:!bg-primary !w-3 !h-3 rounded-full opacity-0 group-hover:opacity-100 transition-all border-2 border-background -ml-1.5"
         />
 
@@ -55,7 +64,16 @@ const CustomNode = ({ data, selected }: NodeProps) => {
         <Handle
           type="source"
           position={Position.Right}
+          id="right"
           className="!bg-muted-foreground hover:!bg-primary !w-3 !h-3 rounded-full opacity-0 group-hover:opacity-100 transition-all border-2 border-background -mr-1.5"
+        />
+
+        {/* Bottom Handle */}
+        <Handle
+          type="source"
+          position={Position.Bottom}
+          id="bottom"
+          className="!bg-muted-foreground hover:!bg-primary !w-3 !h-3 rounded-full opacity-0 group-hover:opacity-100 transition-all border-2 border-background"
         />
       </div>
 
