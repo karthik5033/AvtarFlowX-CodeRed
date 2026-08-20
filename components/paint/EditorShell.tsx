@@ -435,6 +435,7 @@ export default function EditorShell() {
                         <Panel ref={leftPanelRef} defaultSize={25} minSize={15} maxSize={35} collapsible={true} className="flex flex-col bg-muted/10 border-r border-border">
                             <div className="flex-1 flex flex-col overflow-hidden h-full">
                                 <AIChatPanel
+                                    onOpenTemplates={() => setShowTemplates(true)}
                                     onApplyFlow={(newNodes, newEdges) => {
                                         // 1. Auto Layout with Dagre
                                         if (newNodes.length > 0) {
@@ -494,7 +495,7 @@ export default function EditorShell() {
                         {/* ---------------- CENTER CANVAS ---------------- */}
                         <Panel defaultSize={75} minSize={30} className="bg-muted/10 relative flex flex-col">
                             {showTemplates && (
-                                <div className="absolute top-4 right-4 w-[350px] bottom-4 z-50 shadow-2xl bg-background border border-border rounded-xl flex flex-col overflow-hidden animate-in slide-in-from-right-8 fade-in pointer-events-auto">
+                                <div className="absolute top-4 left-4 w-[360px] bottom-4 z-50 shadow-2xl bg-background border border-border rounded-xl flex flex-col overflow-hidden animate-in slide-in-from-left-8 fade-in pointer-events-auto">
                                     <div className="p-4 border-b border-border bg-muted/30 flex items-center justify-between">
                                         <h2 className="text-sm font-bold text-foreground flex items-center gap-2">
                                             <Sparkles className="w-4 h-4 text-primary" />
