@@ -50,6 +50,7 @@ function PaletteItem({ label, icon, onClick }: { label: string; icon: any; onCli
 export default function EditorShell() {
     /* 🔹 UI State */
     const [isGenerating, setIsGenerating] = useState(false);
+    const [showTemplates, setShowTemplates] = useState(false);
     const [generatedCode, setGeneratedCode] = useState<string | undefined>(undefined);
     const [pendingChatMsg, setPendingChatMsg] = useState<string | null>(null);
     const [tokenStats, setTokenStats] = useState<{ jsonSize: number; toonSize: number; savedPercent: number } | null>(null);
@@ -432,9 +433,81 @@ export default function EditorShell() {
                     <PanelGroup direction="horizontal">
                         {/* ---------------- LEFT SIDEBAR ---------------- */}
                         <Panel ref={leftPanelRef} defaultSize={25} minSize={15} maxSize={35} collapsible={true} className="flex flex-col bg-muted/10 border-r border-border">
-                            <div className="flex-1 overflow-y-auto p-6 custom-scrollbar">
+                            <div className="flex-1 flex flex-col overflow-hidden h-full">
+                                <AIChatPanel
+                                    onApplyFlow={(newNodes, newEdges) => {
+                                        // 1. Auto Layout with Dagre
+                                        if (newNodes.length > 0) {
+                                            const dagreGraph = new dagre.graphlib.Graph();
+                                            dagreGraph.setDefaultEdgeLabel(() => ({}));
+                                            dagreGraph.setGraph({ rankdir: "TB", nodesep: 300, ranksep: 200, align: "UL" });
 
-                                {/* Flow Builder Intro */}
+                                            newNodes.forEach((node) => {
+                                                const desc = node.data?.description || "";
+                                                // Estimate height: base height + (lines * line height)
+                                                const estHeight = 200 + Math.ceil(desc.length / 40) * 20;
+                                                dagreGraph.setNode(node.id, { width: 300, height: estHeight });
+                                            });
+
+                                            newEdges.forEach((edge) => {
+                                                dagreGraph.setEdge(edge.source, edge.target);
+                                            });
+
+                                            dagre.layout(dagreGraph);
+
+                                            const layoutedNodes = newNodes.map((node) => {
+                                                const nodeWithPosition = dagreGraph.node(node.id);
+                                                const desc = node.data?.description || "";
+                                                const estHeight = 200 + Math.ceil(desc.length / 40) * 20;
+                                                return {
+                                                    ...node,
+                                                    position: {
+                                                        x: nodeWithPosition.x - 150 + 100, // Center x (300/2)
+                                                        y: nodeWithPosition.y - (estHeight / 2) + 100, // Center y
+                                                    },
+                                                };
+                                            });
+                                            setNodes(layoutedNodes);
+                                        } else {
+                                            setNodes(newNodes);
+                                        }
+
+                                        setEdges(newEdges);
+
+                                        // 2. Force Fit View
+                                        if (reactFlowInstance) {
+                                            // Small delay to allow React Render cycle to complete
+                                            setTimeout(() => {
+                                                reactFlowInstance.fitView({ padding: 0.2, duration: 800 });
+                                            }, 200);
+                                        }
+                                    }}
+                                    forceMessage={pendingChatMsg}
+                                />
+                            </div>
+                        </Panel>
+
+                        <PanelResizeHandle className="bg-transparent w-4 -ml-2 z-50 hover:bg-transparent flex items-center justify-center group outline-none">
+                            <div className="w-[1px] h-8 bg-border group-hover:bg-primary transition-colors rounded-full" />
+                        </PanelResizeHandle>
+
+                        {/* ---------------- CENTER CANVAS ---------------- */}
+                        <Panel defaultSize={75} minSize={30} className="bg-muted/10 relative flex flex-col">
+                            {showTemplates && (
+                                <div className="absolute top-4 right-4 w-[350px] bottom-4 z-50 shadow-2xl bg-background border border-border rounded-xl flex flex-col overflow-hidden animate-in slide-in-from-right-8 fade-in pointer-events-auto">
+                                    <div className="p-4 border-b border-border bg-muted/30 flex items-center justify-between">
+                                        <h2 className="text-sm font-bold text-foreground flex items-center gap-2">
+                                            <Sparkles className="w-4 h-4 text-primary" />
+                                            Templates
+                                        </h2>
+                                        <button onClick={() => setShowTemplates(false)} className="text-muted-foreground hover:text-foreground">
+                                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                            </svg>
+                                        </button>
+                                    </div>
+                                    <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
+                                        {/* Flow Builder Intro */}
                                 <div className="mb-8 p-4 bg-card rounded-xl border border-border shadow-sm">
                                     <h2 className="text-base font-bold mb-2 flex items-center gap-2">
                                         <svg className="w-5 h-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -597,73 +670,11 @@ export default function EditorShell() {
                                 </div>
 
 
-                                {/* Tip */}
-                                <div className="p-4 bg-muted/20 rounded-lg border border-border text-xs text-muted-foreground leading-relaxed">
-                                    <strong>Tip:</strong> Double-click nodes to add specifications like "Use red buttons" or "Dark mode".
+                                
+                                    </div>
                                 </div>
-                            </div>
+                            )}
 
-                            {/* AI Chat Layout Adjustment */}
-                            <div className="border-t border-border h-[350px]">
-                                <AIChatPanel
-                                    onApplyFlow={(newNodes, newEdges) => {
-                                        // 1. Auto Layout with Dagre
-                                        if (newNodes.length > 0) {
-                                            const dagreGraph = new dagre.graphlib.Graph();
-                                            dagreGraph.setDefaultEdgeLabel(() => ({}));
-                                            dagreGraph.setGraph({ rankdir: "TB", nodesep: 100, ranksep: 120 });
-
-                                            newNodes.forEach((node) => {
-                                                const desc = node.data?.description || "";
-                                                // Estimate height: base height + (lines * line height)
-                                                const estHeight = 150 + Math.ceil(desc.length / 40) * 20;
-                                                dagreGraph.setNode(node.id, { width: 300, height: estHeight });
-                                            });
-
-                                            newEdges.forEach((edge) => {
-                                                dagreGraph.setEdge(edge.source, edge.target);
-                                            });
-
-                                            dagre.layout(dagreGraph);
-
-                                            const layoutedNodes = newNodes.map((node) => {
-                                                const nodeWithPosition = dagreGraph.node(node.id);
-                                                const desc = node.data?.description || "";
-                                                const estHeight = 150 + Math.ceil(desc.length / 40) * 20;
-                                                return {
-                                                    ...node,
-                                                    position: {
-                                                        x: nodeWithPosition.x - 150 + 100, // Center x (300/2)
-                                                        y: nodeWithPosition.y - (estHeight / 2) + 100, // Center y
-                                                    },
-                                                };
-                                            });
-                                            setNodes(layoutedNodes);
-                                        } else {
-                                            setNodes(newNodes);
-                                        }
-
-                                        setEdges(newEdges);
-
-                                        // 2. Force Fit View
-                                        if (reactFlowInstance) {
-                                            // Small delay to allow React Render cycle to complete
-                                            setTimeout(() => {
-                                                reactFlowInstance.fitView({ padding: 0.2, duration: 800 });
-                                            }, 200);
-                                        }
-                                    }}
-                                    forceMessage={pendingChatMsg}
-                                />
-                            </div>
-                        </Panel>
-
-                        <PanelResizeHandle className="bg-transparent w-4 -ml-2 z-50 hover:bg-transparent flex items-center justify-center group outline-none">
-                            <div className="w-[1px] h-8 bg-border group-hover:bg-primary transition-colors rounded-full" />
-                        </PanelResizeHandle>
-
-                        {/* ---------------- CENTER CANVAS ---------------- */}
-                        <Panel defaultSize={75} minSize={30} className="bg-muted/10 relative flex flex-col">
                             <div className="m-4 flex-1 bg-background rounded-xl shadow-sm border border-border overflow-hidden relative">
                                 <div
                                     className="w-full h-full"

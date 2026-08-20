@@ -25,9 +25,10 @@ export const generateChatResponse = async (history: { role: "user" | "model"; pa
     CRITICAL RULES:ABILITY: If the user asks to create, switch, or generate a flowchart/workflow, you MUST return a strict JSON object wrapped in \`\`\`json\`\`\` code block.
             - The JSON structure must be: { "nodes": [{ "id": "...", "type": "default", "position": { "x": 0, "y": 0 }, "data": { "label": "...", "color": "#...", "description": "DETAILED SPECS HERE" } }], "edges": [{ "id": "...", "source": "...", "target": "..." }] }.
             - **MANDATORY**: Every node MUST have a 'description' field in 'data' with FINE DETAILS (e.g., "Hero section with h1 text 'Welcome' and a CTA button").
-            - **Granularity**: Break flows into detailed steps. Instead of just "Login", generate "Login Form" -> "Auth API" -> "Success Toast" -> "Redirect".
+            - **BALANCED LAYOUT (CRITICAL)**: Do NOT create a single long linear sequence of nodes (e.g., A->B->C->D->E->F). This creates an extreme aspect ratio. Instead, design the flowchart as a **balanced tree or hub-and-spoke model**. Branch out multiple parallel paths from central nodes (e.g., 'Dashboard' branches to 'Settings', 'Profile', 'Feed' simultaneously) to balance the graph vertically and horizontally.
+            - **CONNECTIVITY**: EVERY single node must be connected via edges. Do NOT generate disconnected nodes.
             - Keep node labels concise. Use vibrant colors (hex codes) for nodes.
-            - Spread nodes out visually so they don't overlap (increase x/y coordinates significantly).
+            - Spread nodes out visually so they don't overlap.
             `
       },
       async (model) => {

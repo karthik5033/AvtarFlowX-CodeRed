@@ -15,7 +15,8 @@ import ReactFlow, {
   applyEdgeChanges,
   NodeProps,
   Handle,
-  Position
+  Position,
+  MarkerType
 } from "reactflow";
 import "reactflow/dist/style.css";
 import { Plus } from "lucide-react";
@@ -28,16 +29,15 @@ const CustomNode = ({ data, selected }: NodeProps) => {
       className={`relative group rounded-xl border-2 bg-background transition-all shadow-sm ${selected ? 'border-primary ring-2 ring-primary/20' : 'border-border hover:border-primary/50'}`}
       style={{
         minHeight: '60px',
-        minWidth: '220px'
+        width: '300px'
       }}
     >
       <div className="h-full w-full relative py-3">
-        {/* Top Handle (Target/Source) */}
+        {/* Left Handle (Target) */}
         <Handle
-          id="top"
           type="target"
-          position={Position.Top}
-          className="!bg-muted-foreground hover:!bg-primary !w-3 !h-3 rounded-full opacity-0 group-hover:opacity-100 transition-all border-2 border-background -mt-1.5"
+          position={Position.Left}
+          className="!bg-muted-foreground hover:!bg-primary !w-3 !h-3 rounded-full opacity-0 group-hover:opacity-100 transition-all border-2 border-background -ml-1.5"
         />
 
         <div className="px-4">
@@ -51,25 +51,8 @@ const CustomNode = ({ data, selected }: NodeProps) => {
           )}
         </div>
 
-        {/* Bottom Handle (Source/Target) */}
-        <Handle
-          id="bottom"
-          type="source"
-          position={Position.Bottom}
-          className="!bg-muted-foreground hover:!bg-primary !w-3 !h-3 rounded-full opacity-0 group-hover:opacity-100 transition-all border-2 border-background -mb-1.5"
-        />
-
-        {/* Left Handle (Target) */}
-        <Handle
-          id="left"
-          type="target"
-          position={Position.Left}
-          className="!bg-muted-foreground hover:!bg-primary !w-3 !h-3 rounded-full opacity-0 group-hover:opacity-100 transition-all border-2 border-background -ml-1.5"
-        />
-
         {/* Right Handle (Source) */}
         <Handle
-          id="right"
           type="source"
           position={Position.Right}
           className="!bg-muted-foreground hover:!bg-primary !w-3 !h-3 rounded-full opacity-0 group-hover:opacity-100 transition-all border-2 border-background -mr-1.5"
@@ -79,14 +62,14 @@ const CustomNode = ({ data, selected }: NodeProps) => {
       {/* Bubble-like (+) Add Button - Appears on hover/selection */}
       {(selected || true) && ( // Keeping consistent for demo, usually only on hover/select
         <button
-          className="absolute -bottom-8 left-1/2 transform -translate-x-1/2 w-6 h-6 bg-background hover:bg-muted border border-border hover:border-primary/50 rounded-full flex items-center justify-center shadow-sm text-muted-foreground hover:text-primary transition-all z-50 opacity-0 group-hover:opacity-100"
+          className="absolute -right-8 top-1/2 transform -translate-y-1/2 w-6 h-6 bg-background hover:bg-muted border border-border hover:border-primary/50 rounded-full flex items-center justify-center shadow-sm text-muted-foreground hover:text-primary transition-all z-50 opacity-0 group-hover:opacity-100"
           onClick={(e) => {
             // We need to bubble this event up to EditorShell
             // Since we can't easily pass props to node types without context, 
             // we'll rely on the global click handler or a specific class
             e.stopPropagation();
             // Dispatch a custom event or use the onNodeClick to trigger logic
-            const event = new CustomEvent("openSuggestionMenu", { detail: { x: e.clientX, y: e.clientY + 20 } });
+            const event = new CustomEvent("openSuggestionMenu", { detail: { x: e.clientX + 20, y: e.clientY } });
             window.dispatchEvent(event);
           }}
         >
@@ -98,13 +81,18 @@ const CustomNode = ({ data, selected }: NodeProps) => {
 };
 
 const nodeTypes = {
-  default: CustomNode, // Override default for now, or use specific type
+  avatarNode: CustomNode,
+  default: CustomNode, // Keep as fallback, but AI nodes now use avatarNode
 };
 
 const defaultEdgeOptions = {
   type: 'smoothstep',
   animated: true,
-  style: { stroke: 'hsl(var(--muted-foreground))', strokeWidth: 2 }
+  style: { stroke: '#94a3b8', strokeWidth: 2 },
+  markerEnd: {
+    type: MarkerType.ArrowClosed,
+    color: '#94a3b8'
+  }
 };
 
 type Props = {
@@ -141,7 +129,13 @@ export default function FlowCanvas({ nodes, edges, setNodes, setEdges, onSelectN
   );
 
   const onConnect = useCallback((connection: Connection) => {
-    setEdges((eds) => addEdge({ ...connection, animated: true, style: { stroke: 'hsl(var(--primary))', strokeWidth: 2, strokeDasharray: '5,5' } }, eds));
+    setEdges((eds) => addEdge({ 
+      ...connection, 
+      type: 'smoothstep',
+      animated: true, 
+      style: { stroke: '#94a3b8', strokeWidth: 2, strokeDasharray: '5,5' },
+      markerEnd: { type: MarkerType.ArrowClosed, color: '#94a3b8' }
+    }, eds));
   }, [setEdges]);
 
   return (
@@ -157,18 +151,14 @@ export default function FlowCanvas({ nodes, edges, setNodes, setEdges, onSelectN
         onInit={onInit}
         nodeTypes={nodeTypes}
 
+        minZoom={0.1}
+        maxZoom={1.5}
         fitView
+        fitViewOptions={{ maxZoom: 1, padding: 0.2 }}
         attributionPosition="bottom-left"
         defaultEdgeOptions={defaultEdgeOptions}
       >
-        <Background
-          id="bg"
-          variant={BackgroundVariant.Dots}
-          gap={24}
-          size={1.5}
-          color="hsl(var(--muted-foreground) / 0.2)"
-          className="bg-muted/5"
-        />
+        {/* Removed Background to make canvas clean as requested */}
 
         <MiniMap
           nodeColor="hsl(var(--primary) / 0.5)"

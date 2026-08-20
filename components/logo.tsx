@@ -28,8 +28,8 @@ export const Logo = ({
             y2="20"
             gradientUnits="userSpaceOnUse"
           >
-            <stop stopColor="#9B99FE" />
-            <stop offset="1" stopColor="#2BC8B7" />
+            <stop stopColor="#FFFFFF" />
+            <stop offset="1" stopColor="#888888" />
           </linearGradient>
         </defs>
       </svg>
@@ -37,7 +37,7 @@ export const Logo = ({
       {/* New wordmark */}
       <span className="font-bold text-xl tracking-tight text-white">
         AvatarFlow
-        <span className="bg-linear-to-r from-cyan-300 via-blue-400 to-indigo-500 bg-clip-text text-transparent">
+        <span className="bg-gradient-to-r from-white via-white/80 to-white/60 bg-clip-text text-transparent">
           X
         </span>
       </span>
@@ -74,8 +74,8 @@ export const LogoIcon = ({
           y2="20"
           gradientUnits="userSpaceOnUse"
         >
-          <stop stopColor="#9B99FE" />
-          <stop offset="1" stopColor="#2BC8B7" />
+          <stop stopColor="#FFFFFF" />
+          <stop offset="1" stopColor="#888888" />
         </linearGradient>
       </defs>
     </svg>

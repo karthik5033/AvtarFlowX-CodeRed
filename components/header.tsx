@@ -225,12 +225,12 @@ export const HeroHeader = () => {
                     </div>
 
                     <div className="mt-3 border-t pt-3 text-right">
-                      <a
+                      <Link
                         href="/#features"
                         className="text-sm font-medium text-accent-foreground hover:underline"
                       >
                         View all features →
-                      </a>
+                      </Link>
                     </div>
                   </motion.div>
                 </div>

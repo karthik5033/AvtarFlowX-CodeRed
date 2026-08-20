@@ -463,6 +463,7 @@ export default function FlowCanvas() {
             onDrop={onDrop}
             onDragOver={onDragOver}
             fitView
+            fitViewOptions={{ maxZoom: 1, padding: 0.2 }}
             panOnDrag
             panOnScroll
             zoomOnScroll

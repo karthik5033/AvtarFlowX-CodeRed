@@ -57,20 +57,20 @@ const features = [
 
 export default function Features() {
   return (
-    <section className="py-16 md:py-24 bg-slate-50 dark:bg-slate-900">
+    <section className="py-16 md:py-24 bg-transparent">
       <div className="mx-auto max-w-6xl space-y-12 px-6">
         {/* TITLE */}
         <div className="mx-auto max-w-3xl text-center space-y-4">
-          <h2 className="text-4xl md:text-5xl font-semibold">
+          <h2 className="text-4xl md:text-5xl font-semibold text-white">
             Built for Entrepreneurs, Not Developers
           </h2>
-          <p className="text-muted-foreground text-lg">
+          <p className="text-white/80 text-lg">
             Everything you need to turn your startup idea into a working app — without writing a single line of code or breaking the bank.
           </p>
         </div>
 
         {/* GRID */}
-        <div className="grid border divide-x divide-y max-w-5xl mx-auto sm:grid-cols-2 lg:grid-cols-3 bg-white dark:bg-slate-800 rounded-lg overflow-hidden shadow-sm">
+        <div className="grid border border-white/20 divide-x divide-y divide-white/20 max-w-5xl mx-auto sm:grid-cols-2 lg:grid-cols-3 bg-black/40 backdrop-blur-sm rounded-lg overflow-hidden shadow-sm">
           {features.map((item, i) => {
             const Icon = item.icon;
 
@@ -80,18 +80,18 @@ export default function Features() {
                 href={item.href}
                 className="
                                     group p-10 flex flex-col gap-3 
-                                    hover:bg-slate-100 dark:hover:bg-slate-700 transition-all
+                                    hover:bg-white/10 transition-all
                                     hover:cursor-pointer 
                                     hover:shadow-lg 
                                     duration-200
                                 "
               >
                 <div className="flex items-center gap-2">
-                  <Icon className="size-5 text-slate-700 dark:text-slate-300 group-hover:scale-110 transition" />
-                  <h3 className="text-base font-semibold">{item.title}</h3>
+                  <Icon className="size-5 text-white/90 group-hover:scale-110 transition" />
+                  <h3 className="text-base font-semibold text-white">{item.title}</h3>
                 </div>
 
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-white/70">
                   {item.description}
                 </p>
               </Link>
