@@ -197,27 +197,31 @@ function layoutFlowBalanced(nodes: Node[], edges: Edge[]): Node[] {
         }
     });
 
-    // 3. Compute optimal number of columns to balance width and height equally
+    // 3. Grid sizing
     const n = orderedIds.length;
     let cols = 3;
     if (n <= 2) cols = n;
     else if (n <= 4) cols = 2;
     else if (n <= 6) cols = 3;
     else if (n <= 9) cols = 3;
-    else if (n <= 12) cols = 4;
-    else cols = Math.max(3, Math.min(5, Math.ceil(Math.sqrt(n * 1.3))));
+    else cols = 4; // Max 4 columns for a clean look
 
-    const colWidth = 420; // 300px node width + 120px gap
-    const rowHeight = 280; // ~180px node height + 100px gap
-    const startX = 120;
+    const colWidth = 420; // 300px width + 120px gap
+    const startX = 100;
     const startY = 100;
 
     return orderedIds.map((id, index) => {
         const node = nodeMap.get(id)!;
         const row = Math.floor(index / cols);
         const colInRow = index % cols;
-        // Serpentine S-Curve (even rows left->right, odd rows right->left)
-        const col = (row % 2 === 0) ? colInRow : (cols - 1 - colInRow);
+        const col = colInRow; // Left to right
+
+        // Estimate node height dynamically like dagre did
+        const desc = node.data?.description || "";
+        const estHeight = 150 + Math.ceil(desc.length / 40) * 20;
+        
+        // Approx rowHeight based on the tallest node in a typical grid, use 300
+        const rowHeight = Math.max(300, estHeight + 100);
 
         const x = startX + col * colWidth;
         const y = startY + row * rowHeight;
@@ -583,10 +587,16 @@ export default function EditorShell() {
                             try {
                                 setIsGenerating(true);
                                 setActiveRightTab('preview');
-                                // Collapse left, expand right generously to 50% width
+                                // Collapse left, expand right to exactly 50% width to share equally
                                 leftPanelRef.current?.collapse();
                                 rightPanelRef.current?.expand(50);
                                 
+                                // Animate fitView to adjust flowchart to new smaller canvas size
+                                if (reactFlowInstance) {
+                                    setTimeout(() => reactFlowInstance.fitView({ padding: 0.2, duration: 800 }), 50);
+                                    setTimeout(() => reactFlowInstance.fitView({ padding: 0.2, duration: 800 }), 300);
+                                }
+
                                 const toonData = toTOON(nodes, edges);
                                 const code = await generateAppBoilerplate(toonData);
                                 setGeneratedCode(code);
@@ -614,12 +624,14 @@ export default function EditorShell() {
                 ) : (
                     <PanelGroup direction="horizontal">
                         {/* ---------------- LEFT SIDEBAR ---------------- */}
-                        <Panel ref={leftPanelRef} defaultSize={32} minSize={20} maxSize={45} collapsible={true} className="flex flex-col bg-muted/10 border-r border-border">
+                        <Panel ref={leftPanelRef} defaultSize={30} minSize={15} maxSize={40} collapsible={true} collapsedSize={0} className="flex flex-col bg-muted/10 border-r border-border">
                             <div className="flex-1 flex flex-col overflow-hidden h-full">
                                 <AIChatPanel
                                     onOpenTemplates={() => setShowTemplates(true)}
+                                    onGenerateStart={() => {
+                                        rightPanelRef.current?.collapse();
+                                    }}
                                     onApplyFlow={(newNodes, newEdges) => {
-                                        // Auto Layout with Balanced 2D Spread (Equal Horizontal & Vertical)
                                         if (newNodes.length > 0) {
                                             const layoutedNodes = layoutFlowBalanced(newNodes, newEdges);
                                             setNodes(layoutedNodes);
@@ -646,7 +658,7 @@ export default function EditorShell() {
                         </PanelResizeHandle>
 
                         {/* ---------------- CENTER CANVAS ---------------- */}
-                        <Panel defaultSize={68} minSize={30} className="bg-muted/10 relative flex flex-col">
+                        <Panel defaultSize={70} minSize={20} className="bg-muted/10 relative flex flex-col">
                             {showTemplates && (
                                 <div className="absolute top-4 left-4 bottom-4 z-50 flex items-stretch gap-3 pointer-events-none">
                                     {/* Pane 1: Workflow Categories */}
@@ -795,7 +807,7 @@ export default function EditorShell() {
                         </PanelResizeHandle>
 
                         {/* ---------------- RIGHT PREVIEW ---------------- */}
-                        <Panel ref={rightPanelRef} defaultSize={0} minSize={30} maxSize={75} collapsible={true} className="flex flex-col bg-muted/10 overflow-hidden">
+                        <Panel ref={rightPanelRef} defaultSize={0} minSize={20} maxSize={65} collapsible={true} collapsedSize={0} className="flex flex-col bg-muted/10 overflow-hidden">
                             <div className="flex flex-col h-full w-full p-6 overflow-hidden">
                                 <div className="mb-6 flex justify-between items-center shrink-0">
                                 <div>

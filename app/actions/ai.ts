@@ -66,19 +66,21 @@ export const generateAppBoilerplate = async (flowData: any) => {
     const blueprint = await decomposeFlowchart(toonString);
     
     // Phase 2: Parallel Generation
-    const sectionPromises = blueprint.sections.map(section => 
-        generateSection(blueprint, section)
-            .then(code => ({ id: section.id, code, success: true }))
-            .catch(error => {
-                console.error(`[Slave Agent] Failed to generate section ${section.id}:`, error);
-                const compName = section.id.split(/[-_]/).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join('');
-                return { 
-                    id: section.id, 
-                    code: `const ${compName} = () => <div className="p-4 border border-red-500 bg-red-50 text-red-700">Failed to generate ${section.label}</div>;`, 
-                    success: false 
-                };
-            })
-    );
+    const sectionPromises = blueprint.sections.map((section, index) => {
+        return new Promise<any>(resolve => setTimeout(resolve, index * 1000)).then(() => {
+            return generateSection(blueprint, section)
+                .then(code => ({ id: section.id, code, success: true }))
+                .catch(error => {
+                    console.error(`[Slave Agent] Failed to generate section ${section.id}:`, error);
+                    const compName = section.id.split(/[-_\s]+/).map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join('');
+                    return { 
+                        id: section.id, 
+                        code: `const ${compName} = () => <div className="p-4 border border-red-500 bg-red-50 text-red-700">Failed to generate ${section.label}</div>;`, 
+                        success: false 
+                    };
+                });
+        });
+    });
     
     const results = await Promise.all(sectionPromises);
     
@@ -90,6 +92,10 @@ export const generateAppBoilerplate = async (flowData: any) => {
     // Phase 3: Compose
     const composedCode = composeSections(blueprint, sectionCodes);
     
+    try {
+        require('fs').writeFileSync('.avtarflow_last_generated.tsx', composedCode);
+    } catch(e) {}
+
     return composedCode;
 
   } catch (error: any) {

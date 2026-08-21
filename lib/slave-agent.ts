@@ -12,11 +12,11 @@ SHARED STATE: ${blueprint.sharedState.join(', ')}
 
 CRITICAL RULES:
 1. Return ONLY the component function code. NO markdown formatting, NO \`\`\`tsx tags. JUST the raw code.
-2. DO NOT use 'export default'. Use 'export const ${toPascalCase(section.id)} = () => { ... }' or 'const ...'.
-3. Use 'lucide-react' for icons and 'framer-motion' for animations.
-4. Tailwind CSS for styling. Use modern, premium glassmorphism and bento-grid designs where applicable.
-5. Define any necessary sub-components inline. NO EXTERNAL LIBRARIES except react, lucide-react, framer-motion.
-6. The main component name must be EXACTLY "${toPascalCase(section.id)}".
+2. Use 'lucide-react' for icons and 'framer-motion' for animations. WARNING: DO NOT use brand icons (Github, Twitter, Linkedin, Facebook, etc.) from lucide-react as they have been deprecated and removed. Use generic icons (e.g. Mail, Link, Globe) or SVGs instead.
+3. Tailwind CSS for styling. Use modern, premium glassmorphism and bento-grid designs where applicable.
+4. Define any necessary sub-components inline. NO EXTERNAL LIBRARIES except react, lucide-react, framer-motion.
+5. The main component name must be EXACTLY "${toPascalCase(section.id)}" (Match this EXACT case, do not change "Api" to "API").
+6. CRITICAL: You MUST end the file by exporting the main component as default, e.g. \`export default ${toPascalCase(section.id)};\`
 7. Be concise. Maximum 80-120 lines of JSX.
 8. If the section description mentions forms, use standard \`useState\` and simulate submission using \`window.parent?.postMessage({ type: 'AVTAR_FLOW_DB_INSERT', table: 'app_form_submissions', data: formData }, '*');\`
 9. If you need images, use these Unsplash URLs (do not hallucinate):
@@ -36,10 +36,15 @@ Please output ONLY valid React TSX code for the component.`;
 
     let resultText = await callWithKey(systemInstruction, prompt, false);
 
-    // Clean up if the model still returns markdown tags despite instructions
-    resultText = resultText.replace(/^```[a-z]*\s*/i, "").replace(/```\s*$/, "").trim();
+    // Better extraction of code blocks
+    const match = resultText.match(/```(?:tsx|jsx|typescript|javascript|react)?([\s\S]*?)```/i);
+    if (match) {
+        resultText = match[1];
+    } else {
+        resultText = resultText.replace(/^```[a-z]*\s*/i, "").replace(/```\s*$/, "");
+    }
 
-    return resultText;
+    return resultText.trim();
 }
 
 function toPascalCase(str: string): string {

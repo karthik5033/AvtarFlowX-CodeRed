@@ -264,12 +264,12 @@ export default function PreviewPane({ code, isGenerating, tokenStats }: PreviewP
             dependencies: {
               "react": "18.2.0",
               "react-dom": "18.2.0",
-              "lucide-react": "latest",
+              "lucide-react": "0.300.0", // Locked version. Brand icons removed in recent updates causing crashes on 'latest'
               "clsx": "latest",
               "tailwind-merge": "latest",
               "react-xarrows": "2.0.2",
               "react-use-gesture": "9.1.3",
-              "framer-motion": "10.16.4",
+              "framer-motion": "11.11.0", // Updated to match newer API expectations while remaining stable
               "react-router-dom": "6.22.3",
               "typed.js": "2.0.12",
               "recharts": "2.12.0",

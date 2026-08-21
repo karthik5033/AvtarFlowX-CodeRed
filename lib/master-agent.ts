@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from "@google/generative-ai";
 import { getAvailableKey, markKeyRateLimited } from "./gemini-pool";
 
 export interface ComponentSection {
@@ -37,7 +37,13 @@ export async function callWithKey(
                 generationConfig: {
                     temperature: 0.2,
                     ...(responseJson ? { responseMimeType: "application/json" } : {})
-                }
+                },
+                safetySettings: [
+                    { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
+                    { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
+                    { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_NONE },
+                    { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE },
+                ]
             });
             
             const result = await model.generateContent(prompt);
@@ -48,11 +54,12 @@ export async function callWithKey(
             
             const msg = error.message || error.toString();
             if (msg.includes('429') || msg.includes('Too Many Requests') || msg.includes('quota')) {
-                // Rate limited, mark it
                 markKeyRateLimited(key.id, 15);
-                continue; // Try next key
             }
-            throw error; // If it's not rate limited, just throw
+            // CLEVER FIX: We now continue and retry on ANY error (503s, fetch failed, etc) instead of throwing immediately.
+            // Wait 1 second before retrying to let the network breathe
+            await new Promise(res => setTimeout(res, 1000));
+            continue;
         }
     }
     
@@ -101,7 +108,8 @@ CRITICAL RULES:
 
 function toPascalCase(str: string): string {
     if (!str) return '';
-    return str.split(/[-_]/).map(word => word.charAt(0).toUpperCase() + word.slice(1)).join('');
+    // Fix: Also split on spaces to handle section IDs like "Contact Section"
+    return str.split(/[-_\s]+/).map(word => word.charAt(0).toUpperCase() + word.slice(1)).join('');
 }
 
 export function composeSections(blueprint: ComponentBlueprint, sectionCodes: Record<string, string>): string {
@@ -119,6 +127,62 @@ export function composeSections(blueprint: ComponentBlueprint, sectionCodes: Rec
         const code = sectionCodes[section.id] || `const ${compName} = () => <div className="p-4 border text-red-500">Error generating ${section.id}</div>;`;
         
         let codeWithoutImports = code;
+        
+        // 0. Fix anonymous default exports FIRST
+        codeWithoutImports = codeWithoutImports.replace(/export\s+default\s+function\s*\(/g, `function ${compName}(`);
+        codeWithoutImports = codeWithoutImports.replace(/export\s+default\s+\(\)\s*=>/g, `const ${compName} = () =>`);
+        codeWithoutImports = codeWithoutImports.replace(/export\s+default\s+memo\s*\(/g, `const ${compName} = memo(`);
+        codeWithoutImports = codeWithoutImports.replace(/export\s+default\s+React\.memo\s*\(/g, `const ${compName} = React.memo(`);
+
+        // 1. Detect the actual component name the AI used by looking at its export default statement
+        let actualName = "";
+        const exportDefaultMatch = code.match(/export\s+default\s+([A-Za-z0-9_]+);?/);
+        if (exportDefaultMatch && exportDefaultMatch[1]) {
+            actualName = exportDefaultMatch[1];
+        } else {
+            const exportDefaultFuncMatch = code.match(/export\s+default\s+function\s+([A-Za-z0-9_]+)/);
+            if (exportDefaultFuncMatch && exportDefaultFuncMatch[1]) {
+                actualName = exportDefaultFuncMatch[1];
+            } else {
+                const exportConstMatch = code.match(/export\s+const\s+([A-Z][A-Za-z0-9_]+)\s*=/);
+                if (exportConstMatch && exportConstMatch[1]) {
+                    actualName = exportConstMatch[1];
+                }
+            }
+        }
+        
+        // 1.5. Fallback: If AI completely hallucinated a name AND forgot to export it, find the first PascalCase variable/function
+        if (!actualName) {
+            const fallbackMatch = code.match(/(?:const|let|var|function|class)\s+([A-Z][a-z0-9][A-Za-z0-9]*)\b/);
+            if (fallbackMatch && fallbackMatch[1]) {
+                actualName = fallbackMatch[1];
+            }
+        }
+        
+        // 2. If we found an actual name and it differs from compName, aggressively rename it
+        if (actualName && actualName !== compName) {
+            const escapedActualName = actualName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const nameRegex = new RegExp(`\\b${escapedActualName}\\b`, 'g');
+            codeWithoutImports = codeWithoutImports.replace(nameRegex, compName);
+        } else {
+            // Fallback: strictly rename declarations and exports, not HTML tags
+            const escapedCompName = compName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const declRegex = new RegExp(`(const|let|var|function|class)\\s+(${escapedCompName})\\b`, 'gi');
+            codeWithoutImports = codeWithoutImports.replace(declRegex, `$1 ${compName}`);
+            
+            const exportRegex = new RegExp(`export\\s+default\\s+(${escapedCompName})\\b`, 'gi');
+            codeWithoutImports = codeWithoutImports.replace(exportRegex, `export default ${compName}`);
+        }
+        
+        // 3. Strip all exports to prevent duplicate default export errors in the combined file
+        codeWithoutImports = codeWithoutImports
+            .replace(/export\s+default\s+function\s+([A-Za-z0-9_]+)/g, 'function $1')
+            .replace(/export\s+default\s+([A-Za-z0-9_]+);?/g, '')
+            .replace(/export\s+const\s+/g, 'const ')
+            .replace(/export\s+function\s+/g, 'function ')
+            .replace(/export\s+default\s+memo/g, '') // Just in case
+            .replace(/export\s+default\s+React\.memo/g, '');
+        
         const matches = Array.from(code.matchAll(importRegex));
         
         matches.forEach(match => {

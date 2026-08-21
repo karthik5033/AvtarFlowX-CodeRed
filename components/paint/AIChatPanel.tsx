@@ -10,6 +10,7 @@ interface AIChatPanelProps {
     onApplyFlow?: (nodes: Node[], edges: Edge[]) => void;
     forceMessage?: string | null;
     onOpenTemplates?: () => void;
+    onGenerateStart?: () => void;
 }
 
 const GENERATING_STEPS = [
@@ -25,7 +26,7 @@ const GENERATING_STEPS = [
     "Polishing final output..."
 ];
 
-export default function AIChatPanel({ onApplyFlow, forceMessage, onOpenTemplates }: AIChatPanelProps) {
+export default function AIChatPanel({ onApplyFlow, forceMessage, onOpenTemplates, onGenerateStart }: AIChatPanelProps) {
     const [messages, setMessages] = useState<{ role: "user" | "ai" | "model"; text: string }[]>([
         { role: "ai", text: "Hi! I'm your AvatarFlow Agent. I can help you build workflows, generate boilerplate, or explain concepts. What are we building today?" }
     ]);
@@ -67,6 +68,9 @@ export default function AIChatPanel({ onApplyFlow, forceMessage, onOpenTemplates
         setMessages((prev) => [...prev, userMsg]);
         setInput("");
         setIsTyping(true);
+        if (onGenerateStart) {
+            onGenerateStart();
+        }
 
         try {
             // Prepare history for API
