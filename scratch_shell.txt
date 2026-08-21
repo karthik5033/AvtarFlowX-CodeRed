@@ -1,0 +1,14 @@
+className="p-4 bg-muted/20 rounded-lg border border-border text-xs text-muted-foreground leading-relaxed">
+                                    <strong>Tip:</strong> Double-click nodes to add specifications like "Use red buttons" or "Dark mode".
+                                </div>
+                            </div>
+
+                            {/* AI Chat Layout Adjustment */}
+                            <div className="border-t border-border h-[350px]">
+                                <AIChatPanel
+                                    onApplyFlow={(newNodes, newEdges) => {
+                                        // 1. Auto Layout with Dagre
+                                        if (newNodes.length > 0) {
+                                            const dagreGraph = new dagre.graphlib.Graph();
+                                            dagreGraph.setDefaultEdgeLabel(() => ({}));
+                                            dagreGraph.setGraph({ rankdir: "TB", nodesep: 1

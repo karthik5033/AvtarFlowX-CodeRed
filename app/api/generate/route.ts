@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
                 try {
                     await withRetry(
                         {
-                            model: 'gemini-2.5-flash',
+                            model: 'gemini-3.6-flash',
                             generationConfig: {
                                 temperature: 0.7,
                                 topP: 0.95,

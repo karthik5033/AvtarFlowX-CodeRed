@@ -1,0 +1,13 @@
+Created At: 2026-08-20T15:39:02+05:30
+Completed At: 2026-08-20T15:39:03+05:30
+
+\t\t\t\tThe command exited with code 0.
+\t\t\t\tOutput:
+\t\t\t\t<truncated 309 lines>
++                                                </svg>
++                                                Workflow Builder
++                                            </h2>
++                                            <button onClick={() => {
++                                                setShowTemplates(false);
++                                                setExpandedWorkflow(null);
++                                            }} className=\

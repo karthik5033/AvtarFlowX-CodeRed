@@ -53,17 +53,91 @@ const DEFAULT_CODE = `export default function App() {
   );
 }`;
 
+export function sanitizeCodeForPreview(rawCode?: string): string {
+  if (!rawCode) return DEFAULT_CODE;
+
+  let code = rawCode.trim();
+
+  // If there are multiple markdown code blocks, extract the primary one containing export default
+  if (code.includes("```")) {
+    const blocks = code.split(/```(?:typescript|tsx|jsx|javascript|react)?/i);
+    for (const block of blocks) {
+      const candidate = block.replace(/```/g, "").trim();
+      if (candidate.includes("export default")) {
+        code = candidate;
+        break;
+      }
+    }
+  }
+
+  // 1. Strip markdown fences if present
+  code = code.replace(/^```(?:typescript|tsx|jsx|javascript|react)?\s*/i, "");
+  code = code.replace(/\s*```$/i, "");
+  code = code.trim();
+
+  // 2. Ensure React imports
+  if (!code.includes("import React") && !code.includes("import * as React")) {
+    code = `import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";\n` + code;
+  }
+
+  // 3. Provide fallback helper declarations if used in code but not defined
+  const helpers: string[] = [];
+
+  if (code.includes("submitProfileForm") && !code.includes("const submitProfileForm") && !code.includes("function submitProfileForm")) {
+    helpers.push(`const submitProfileForm = async (data: any, table?: string) => {
+  try {
+    window.parent?.postMessage({ type: 'AVTAR_FLOW_DB_INSERT', table: table || 'app_form_submissions', data }, '*');
+    return { success: true };
+  } catch (e) {
+    console.error("submitProfileForm error:", e);
+    return { success: false, error: e };
+  }
+};`);
+  }
+
+  if (code.includes("submitForm") && !code.includes("const submitForm") && !code.includes("function submitForm")) {
+    helpers.push(`const submitForm = async (data: any, table?: string) => {
+  try {
+    window.parent?.postMessage({ type: 'AVTAR_FLOW_DB_INSERT', table: table || 'app_form_submissions', data }, '*');
+    return { success: true };
+  } catch (e) {
+    console.error("submitForm error:", e);
+    return { success: false, error: e };
+  }
+};`);
+  }
+
+  if ((code.includes("toast(") || code.includes("toast.")) && !code.includes("const toast") && !code.includes("function toast") && !code.includes("import { toast }")) {
+    helpers.push(`const toast = {
+  success: (msg: string) => console.log("Toast Success:", msg),
+  error: (msg: string) => console.error("Toast Error:", msg),
+  info: (msg: string) => console.log("Toast Info:", msg)
+};`);
+  }
+
+  if (helpers.length > 0) {
+    const exportIdx = code.indexOf("export default");
+    if (exportIdx !== -1) {
+      code = code.slice(0, exportIdx) + helpers.join("\n\n") + "\n\n" + code.slice(exportIdx);
+    } else {
+      code = helpers.join("\n\n") + "\n\n" + code;
+    }
+  }
+
+  return code;
+}
+
 type ThemeColor = 'blue' | 'indigo' | 'violet' | 'purple' | 'fuchsia' | 'pink' | 'rose' | 'red' | 'orange' | 'amber' | 'yellow' | 'lime' | 'green' | 'emerald' | 'teal' | 'cyan' | 'sky';
 
 export default function PreviewPane({ code, isGenerating, tokenStats }: PreviewPaneProps) {
   const [showCode, setShowCode] = React.useState(false);
   const [showConsole, setShowConsole] = React.useState(false);
-  const [activeCode, setActiveCode] = useState(code || DEFAULT_CODE);
+  const [activeCode, setActiveCode] = useState(() => sanitizeCodeForPreview(code));
   const [isDark, setIsDark] = useState(false);
 
-  // Sync prop changes to state
+  // Sync prop changes to state with sanitization
   useEffect(() => {
-    if (code) setActiveCode(code);
+    if (code) setActiveCode(sanitizeCodeForPreview(code));
   }, [code]);
 
   const handleColorChange = (newColor: ThemeColor) => {

@@ -5,7 +5,7 @@ import { getModel, hasApiKey } from './gemini-client';
 const { genAI, model: defaultModel, apiKey } = (() => {
     try {
         return getModel({
-            model: 'gemini-2.5-flash',
+            model: 'gemini-3.6-flash',
             generationConfig: {
                 temperature: 0.7,
                 topP: 0.95,
@@ -17,7 +17,7 @@ const { genAI, model: defaultModel, apiKey } = (() => {
         // Fallback for when no keys are set (e.g. during build)
         return {
             genAI: new GoogleGenerativeAI(''),
-            model: new GoogleGenerativeAI('').getGenerativeModel({ model: 'gemini-2.5-flash' }),
+            model: new GoogleGenerativeAI('').getGenerativeModel({ model: 'gemini-3.6-flash' }),
             apiKey: '',
         };
     }

@@ -2,6 +2,8 @@
 
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { withRetry, hasApiKey } from "@/lib/gemini-client";
+import { decomposeFlowchart, composeSections } from "@/lib/master-agent";
+import { generateSection } from "@/lib/slave-agent";
 
 export const generateChatResponse = async (history: { role: "user" | "model"; parts: string }[], message: string) => {
   if (!hasApiKey()) {
@@ -11,24 +13,22 @@ export const generateChatResponse = async (history: { role: "user" | "model"; pa
   try {
     return await withRetry(
       {
-        model: "gemini-2.5-flash",
+        model: "gemini-3.6-flash",
         systemInstruction: `
-            You are an expert Frontend AI that builds React+Tailwind apps based on FLOWCHARTS.
-    You will receive a compressed format called TOON:
-    Nodes: id|type|label|x|y|color|description
-    Edges: source|target|label
+            You are the "AI Architect" for AvatarFlowX. Your ONLY job is to translate user app ideas into detailed Architecture Flowcharts.
+            You DO NOT write React code. You ONLY output Flowchart JSON.
 
-    THE DESCRIPTION FIELD IS CRITICAL. It contains user Specifications for that step.
-    - If a node says "Login" and description says "Use Google Auth button only", you MUST Implement that.
-    - If a node says "Dashboard" and description says "Show a line chart of sales", you MUST Implement exactly that.
-
-    CRITICAL RULES:ABILITY: If the user asks to create, switch, or generate a flowchart/workflow, you MUST return a strict JSON object wrapped in \`\`\`json\`\`\` code block.
+            CRITICAL RULES:
+            - You MUST return a strict JSON object wrapped in \`\`\`json\`\`\` code block.
             - The JSON structure must be: { "nodes": [{ "id": "...", "type": "default", "position": { "x": 0, "y": 0 }, "data": { "label": "...", "color": "#...", "description": "DETAILED SPECS HERE" } }], "edges": [{ "id": "...", "source": "...", "target": "..." }] }.
-            - **MANDATORY**: Every node MUST have a 'description' field in 'data' with FINE DETAILS (e.g., "Hero section with h1 text 'Welcome' and a CTA button").
-            - **BALANCED LAYOUT (CRITICAL)**: Do NOT create a single long linear sequence of nodes (e.g., A->B->C->D->E->F). This creates an extreme aspect ratio. Instead, design the flowchart as a **balanced tree or hub-and-spoke model**. Branch out multiple parallel paths from central nodes (e.g., 'Dashboard' branches to 'Settings', 'Profile', 'Feed' simultaneously) to balance the graph vertically and horizontally.
-            - **CONNECTIVITY**: EVERY single node must be connected via edges. Do NOT generate disconnected nodes.
+            - **STRICT JSON (CRITICAL)**: You must output 100% valid JSON. ALL property names must be wrapped in double quotes (e.g. "nodes": [], NOT nodes: []).
+            - **MANDATORY**: Every node MUST have a 'description' field in 'data' with FINE DETAILS (e.g., "Hero section with h1 text 'Welcome' and a CTA button. Use glassmorphism.").
+            - **Granularity**: Break app flows into detailed steps. Instead of just "Login", generate "Login Form" -> "Auth API" -> "Success Toast" -> "Redirect".
+            - **BALANCED LAYOUT (CRITICAL)**: Do NOT create a single long linear sequence of nodes. Design the flowchart as a balanced tree or hub-and-spoke model. Branch out multiple parallel paths from central nodes to balance the graph vertically and horizontally.
             - Keep node labels concise. Use vibrant colors (hex codes) for nodes.
-            - Spread nodes out visually so they don't overlap.
+            - Spread nodes out visually so they don't overlap (increase x/y coordinates significantly).
+            
+            NEVER OUTPUT REACT CODE. ONLY OUTPUT JSON FLOWCHARTS.
             `
       },
       async (model) => {
@@ -60,182 +60,41 @@ export const generateAppBoilerplate = async (flowData: any) => {
   }
 
   try {
-    return await withRetry(
-      { model: "gemini-2.5-flash" },
-      async (model) => {
-        const prompt = `
-    You are an expert React/Next.js developer.
-    Analyze this workflow JSON and generate a single file React component (using Tailwind CSS) that implements this logic.
+    const toonString = typeof flowData === 'string' ? flowData : JSON.stringify(flowData);
     
-    Flow Data: ${JSON.stringify(flowData, null, 2)}
+    // Phase 1: Decompose
+    const blueprint = await decomposeFlowchart(toonString);
     
-    CRITICAL RULES:
-    1. Return ONLY the code.
-    2. Do NOT import custom components. Define everything (Buttons, Cards, Navbar) inside this file.
-    3. Use 'lucide-react' for icons.
-    4. Use standard HTML/Tailwind classes.
-    5. The default export must be named 'App'.
-    6. Wrap the code in \`\`\`tsx\`\`\`.
-    7. **NO EXTERNAL LIBRARIES**:
-       - DO NOT use 'react-hook-form', 'zod', 'react-toastify', or 'yup'.
-       - Use simple React \`useState\` for all forms.
-       - Use \`framer-motion\` for animations.
-    
-    WORLD-CLASS DESIGN SYSTEM (MANDATORY):
-    Your goal is to win a generic "Best UI of the Year" award.
-    
-    1. **Aesthetics (Linear/Vercel Style)**:
-       - **Typography**: Use 'font-sans' (Inter). Use tight tracking ('tracking-tight') for headings.
-       - **Colors**: Use sophisticated palettes. 
-         - Light Mode: 'bg-white', 'text-slate-900', border 'border-slate-200'.
-         - Accents: Use 'indigo-600' or 'violet-600' for primary actions.
-       - **Shadows & Borders**: Use subtle, multi-layer shadows (e.g., 'shadow-sm', 'shadow-xl'). ADD BORDERS to almost everything ('border border-slate-100').
-       - **Glassmorphism**: Use 'backdrop-blur-md' and 'bg-white/70' for sticky headers/overlays.
-    
-    2. **Layout & Spacing**:
-       - **Bento Grids**: Use CSS Grid ('grid-cols-1 md:grid-cols-3 gap-4') for dashboard cards.
-       - **Whitespace**: Be generous with padding ('p-6', 'p-8'). Don't cram content.
-       - **Mobile-First**: Default to 'w-full' and 'flex-col'. Expand to 'flex-row' on 'md:' breakpoints.
-       
-    3. **Micro-Interactions (Framer Motion)**:
-       - Animate ALL page transitions (opacity, y-shift).
-       - Animate buttons on hover ('whileHover={{ scale: 1.02 }}').
-       - Use 'AnimatePresence' for conditional rendering (modals, tabs).
-       
-    4. **Components**:
-       - **Buttons**: Rounded-lg, font-medium, subtle border.
-       - **Cards**: Bg-white, border-slate-100, shadow-sm, rounded-xl.
-       - **Inputs**: Bg-slate-50, border-slate-200, focus:ring-2 ring-indigo-500/20.
-    
-    5. **Content Realism**:
-       - Do NOT use "Lorem Ipsum". Write real copy ("Welcome back, Karthik", "Revenue: $12,450").
-       - Mock REAL data structures (arrays of objects) and render them.
-
-    6. **Strict Description Adherence**:
-       - If the TOON description says "Use red button", YOU MUST DO IT. 
-       - Descriptions override these styles.
-    
-    7. **Stock Image Strategy (MANDATORY)**:
-       - NEVER use colored divs for images. Use these High-Quality Unsplash URLs:
-       - **Abstract/Tech**: 
-         - "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=800&q=80"
-         - "https://images.unsplash.com/photo-1677442136019-21780ecad995?auto=format&fit=crop&w=800&q=80"
-         - "https://images.unsplash.com/photo-1620712943543-bcc4688e7485?auto=format&fit=crop&w=800&q=80"
-         - "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&w=800&q=80"
-         - "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=800&q=80"
-       - **People/Office**:
-         - "https://images.unsplash.com/photo-1556761175-5973dc0f32e7?auto=format&fit=crop&w=800&q=80"
-         - "https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=800&q=80"
-         - "https://images.unsplash.com/photo-1497215728101-856f4ea42174?auto=format&fit=crop&w=800&q=80"
-         - "https://images.unsplash.com/photo-1531545514256-b1400bc00f31?auto=format&fit=crop&w=800&q=80"
-       - **Avatars**:
-         - "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=150&q=80"
-         - "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80"
-         - "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=150&q=80"
-         - "https://images.unsplash.com/photo-1599566150163-29194dcaad36?auto=format&fit=crop&w=150&q=80"
-         - "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80"
-       - **Products/Lifestyle**:
-         - "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=800&q=80" (Headphones)
-         - "https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?auto=format&fit=crop&w=800&q=80" (Camera)
-         - "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=800&q=80" (Shoes)
-         - "https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=800&q=80" (Watch)
-         - "https://images.unsplash.com/photo-1585386959960-5f9977f09314?auto=format&fit=crop&w=800&q=80" (Perfume)
-
-       **CRITICAL RULE: NO DUPLICATES**
-       - You MUST NOT use the same image URL twice in the same component.
-       - If you have a grid of 4 items, use 4 DIFFERENT URLs from the list.
-       - If you run out of specific category images, use an 'Abstract/Tech' image as a fallback.
-
-    8. **REAL BACKEND INTEGRATION (MANDATORY)**:
-       - You MUST persist data when forms are submitted.
-       - Use this exact API call for ANY form submission (Contact, Login, Sign Up):
-         \`\`\`javascript
-         const response = await fetch('/api/database', {
-           method: 'POST',
-           headers: { 'Content-Type': 'application/json' },
-           body: JSON.stringify({
-             action: 'insert',
-             table: 'app_form_submissions',
-             data: {
-               project_id: 'default',
-               form_id: 'form_' + Date.now(),
-               data: JSON.stringify(formData) // Ensure formData is a plain object!
-             }
-           })
-         });
-         \`\`\`
-       - **FormData Handling**: YOU MUST USE THE FOLLOWING EXACT CODE PATTERN for all form submissions:
-         
-         \`\`\`javascript
-         // ADD THIS useEffect AT THE TOP OF YOUR COMPONENT
-         useEffect(() => {
-            const handleMessage = (e: MessageEvent) => {
-              // Listen for success/error from the parent window
-              if (e.data.type === 'DB_INSERT_SUCCESS') {
-                alert("✅ Success! Data saved.");
-                // Optionally reset form state here
-              } else if (e.data.type === 'DB_INSERT_ERROR') {
-                alert("❌ Error: " + e.data.error);
-              }
-            };
-            window.addEventListener('message', handleMessage);
-            return () => window.removeEventListener('message', handleMessage);
-         }, []);
-
-         const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-           e.preventDefault();
-           setIsLoading(true);
-           
-           try {
-             const formData = new FormData(e.currentTarget);
-             const plainData = Object.fromEntries(formData.entries());
-             console.log("Submitting:", plainData);
-
-             // SEND VIA BRIDGE (Bypasses CORS/Mixed Content issues)
-             // The parent window (Editor) will handle the actual API call
-             window.parent.postMessage({ 
-               type: 'AVTAR_FLOW_DB_INSERT', 
-               table: 'app_form_submissions', 
-               data: plainData 
-             }, '*');
-             
-           } catch (err) {
-             console.error(err);
-             alert("Error preparing data");
-           } finally {
-             // Simulate network delay since postMessage is async
-             setTimeout(() => setIsLoading(false), 1000);
-           }
-         };
-         \`\`\`
-       - **Validation**: Forms must turn red if empty.
-       
-    SCENARIO SPECIFICS:
-    - **Portfolio**: Large Hero Image (use Abstract/Tech), Bento Grid of 4 projects (use Product images), Contact Form with Toast.
-    - **SaaS**: Sidebar Layout. Dashboard must show a "Revenue Chart" (rechart or CSS bars) and a "Team Members" list using Avatar images.
-    - **E-commerce**: Product Grid using Product images. "Add to Cart" must show a "Added!" toast.
-    `;
-
-        const result = await model.generateContent(prompt);
-        const response = await result.response;
-        const text = response.text();
-
-        console.log("Gemini Raw Output:", text);
-
-        // Regex to extract code block
-        const match = text.match(/```(?:typescript|tsx|jsx|javascript|react)?([\s\S]*?)```/i);
-
-        if (match && match[1]) {
-          return match[1].trim();
-        }
-
-        // Fallback: mostly clean raw text if no block found
-        return text.replace(/```(typescript|tsx|jsx|javascript|react)?/gi, "").replace(/```/g, "").trim();
-      }
+    // Phase 2: Parallel Generation
+    const sectionPromises = blueprint.sections.map(section => 
+        generateSection(blueprint, section)
+            .then(code => ({ id: section.id, code, success: true }))
+            .catch(error => {
+                console.error(`[Slave Agent] Failed to generate section ${section.id}:`, error);
+                const compName = section.id.split(/[-_]/).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join('');
+                return { 
+                    id: section.id, 
+                    code: `const ${compName} = () => <div className="p-4 border border-red-500 bg-red-50 text-red-700">Failed to generate ${section.label}</div>;`, 
+                    success: false 
+                };
+            })
     );
+    
+    const results = await Promise.all(sectionPromises);
+    
+    const sectionCodes: Record<string, string> = {};
+    results.forEach(res => {
+        sectionCodes[res.id] = res.code;
+    });
+    
+    // Phase 3: Compose
+    const composedCode = composeSections(blueprint, sectionCodes);
+    
+    return composedCode;
+
   } catch (error: any) {
-    console.error("Gemini Generation Error:", error);
-    return "// Error generating code. Please check server logs.";
+    console.error("Master-Slave Generation Error:", error);
+    return `// Error generating code: ${error.message}\nexport default function App() { return <div className="p-8 text-red-500">Generation Failed: ${error.message}</div>; }`;
   }
 };
 
@@ -244,7 +103,7 @@ export const suggestImage = async (query: string) => {
 
   try {
     return await withRetry(
-      { model: "gemini-2.5-flash" },
+      { model: "gemini-3.6-flash" },
       async (model) => {
         const prompt = `
         You are an image search assistant.
@@ -271,7 +130,7 @@ export const generateFlowFromImage = async (base64Image: string) => {
 
   try {
     return await withRetry(
-      { model: "gemini-2.5-flash" },
+      { model: "gemini-3.6-flash" },
       async (model) => {
         const prompt = `
         Analyze this flowchart/diagram image and extract the nodes and edges into a JSON format compatible with React Flow.
@@ -334,7 +193,7 @@ export const suggestImprovements = async (code: string) => {
 
   try {
     return await withRetry(
-      { model: "gemini-2.5-flash" },
+      { model: "gemini-3.6-flash" },
       async (model) => {
         const prompt = `
         Analyze the following React component code and suggest 20 specific, high-impact improvements or features.
@@ -364,7 +223,7 @@ export const editReactComponent = async (code: string, userPrompt: string) => {
 
   try {
     return await withRetry(
-      { model: "gemini-2.5-flash" },
+      { model: "gemini-3.6-flash" },
       async (model) => {
         const prompt = `
         You are a Senior React Engineer.

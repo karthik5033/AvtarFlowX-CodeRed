@@ -1,0 +1,23 @@
+0 011-1h4a1 1 0 011 1v3a1 1 0 01-1 1H5a1 1 0 01-1-1v-3zM14 16a1 1 0 011-1h4a1 1 0 011 1v3a1 1 0 01-1 1h-4a1 1 0 01-1-1v-3z" />
+                                        </svg>
+                                        Workflow Builder
+                                    </h2>
+                                    <p className="text-sm text-muted-foreground leading-relaxed">Select components to build your app logic.</p>
+                                </div>
+
+                                {/* Common Workflows - Accordion Style */}
+                                <div className="mb-6">
+                                    <div className="flex items-center gap-2 mb-4">
+                                        <div className="h-px flex-1 bg-gradient-to-r from-transparent via-border to-transparent"></div>
+                                        <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider px-2">Common Workflows</h3>
+                                        <div className="h-px flex-1 bg-gradient-to-r from-transparent via-border to-transparent"></div>
+                                    </div>
+                                    <div className="space-y-2">
+                                        {[
+                                            {
+                                                category: "Portfolio & Business",
+                                                icon: "💼",
+                                                workflows: [
+                                                    { label: "Portfolio Website", prompt: "Create a detailed flowchart for a modern Portfolio website with a Hero section, About Me, Project Gallery (grid), and Contact Form." },
+                                                    { label: "Company Website", prompt: "Build a corporate website flowchart with Navbar, Hero Banner, Services Section (3 columns), Team Grid, and Contact Page." },
+                                                

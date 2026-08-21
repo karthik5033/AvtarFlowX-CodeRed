@@ -562,7 +562,7 @@ export default function EditorShell() {
                         onClick={() => {
                             if (activeRightTab !== 'preview') setActiveRightTab('preview');
                             if (!rightPanelRef.current?.isExpanded()) {
-                                rightPanelRef.current?.expand();
+                                rightPanelRef.current?.expand(50);
                             } else if (activeRightTab === 'preview') {
                                 rightPanelRef.current?.collapse();
                             }
@@ -583,9 +583,9 @@ export default function EditorShell() {
                             try {
                                 setIsGenerating(true);
                                 setActiveRightTab('preview');
-                                // Collapse left, expand right
+                                // Collapse left, expand right generously to 50% width
                                 leftPanelRef.current?.collapse();
-                                rightPanelRef.current?.expand();
+                                rightPanelRef.current?.expand(50);
                                 
                                 const toonData = toTOON(nodes, edges);
                                 const code = await generateAppBoilerplate(toonData);
@@ -795,7 +795,7 @@ export default function EditorShell() {
                         </PanelResizeHandle>
 
                         {/* ---------------- RIGHT PREVIEW ---------------- */}
-                        <Panel ref={rightPanelRef} defaultSize={0} minSize={25} maxSize={60} collapsible={true} className="flex flex-col bg-muted/10 overflow-hidden">
+                        <Panel ref={rightPanelRef} defaultSize={0} minSize={30} maxSize={75} collapsible={true} className="flex flex-col bg-muted/10 overflow-hidden">
                             <div className="flex flex-col h-full w-full p-6 overflow-hidden">
                                 <div className="mb-6 flex justify-between items-center shrink-0">
                                 <div>

@@ -11,6 +11,7 @@ import { SandpackProvider, SandpackPreview, SandpackLayout } from "@codesandbox/
 import { generateChatResponse, suggestImage, suggestImprovements, editReactComponent } from "../actions/ai";
 import { MEDIA_LIBRARY } from "./images";
 import { EDITOR_FONTS } from "./fonts";
+import { sanitizeCodeForPreview } from "@/components/paint/PreviewPane";
 
 // Polyfill for crypto.subtle.digest if not available
 if (typeof window !== 'undefined' && (!window.crypto || !window.crypto.subtle || !window.crypto.subtle.digest)) {
@@ -891,7 +892,7 @@ export default function CustomizePage() {
                                     key={code}
                                     template="react-ts"
                                     theme="light"
-                                    files={{ "/App.tsx": { code: code, active: true }, }}
+                                    files={{ "/App.tsx": { code: sanitizeCodeForPreview(code), active: true }, }}
                                     customSetup={{
                                         dependencies: {
                                             "react": "18.2.0",

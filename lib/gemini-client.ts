@@ -1,4 +1,5 @@
 import { GoogleGenerativeAI, GenerativeModel, ModelParams } from '@google/generative-ai';
+import { getAllGeminiKeys } from './gemini-pool';
 
 /**
  * Centralized Gemini client with dual-key rotation and retry on 429 errors.
@@ -9,13 +10,7 @@ import { GoogleGenerativeAI, GenerativeModel, ModelParams } from '@google/genera
  */
 
 function getApiKeys(): string[] {
-    const keys: string[] = [];
-    const key1 = process.env.GEMINI_API_KEY;
-    const key2 = process.env.NEW_GEMINI_API_KEY;
-    console.log("CHECKING API KEYS:", { key1: key1 ? "present" : "missing", key2: key2 ? "present" : "missing" });
-    if (key1) keys.push(key1);
-    if (key2) keys.push(key2);
-    return keys;
+    return getAllGeminiKeys();
 }
 
 // Track which key index to start with (round-robin across requests)
@@ -55,7 +50,7 @@ export type GeminiModelConfig = {
 };
 
 const DEFAULT_MODEL_CONFIG: GeminiModelConfig = {
-    model: 'gemini-2.5-flash',
+    model: 'gemini-3.6-flash',
     generationConfig: {
         temperature: 0.7,
         topP: 0.95,
@@ -84,7 +79,7 @@ export function getModel(config?: GeminiModelConfig): {
 
     const merged = { ...DEFAULT_MODEL_CONFIG, ...config };
     const modelParams: ModelParams = {
-        model: merged.model || 'gemini-2.5-flash',
+        model: merged.model || 'gemini-3.6-flash',
         generationConfig: merged.generationConfig,
         ...(merged.systemInstruction ? { systemInstruction: merged.systemInstruction } : {}),
     };
@@ -99,13 +94,13 @@ export function getModel(config?: GeminiModelConfig): {
  * 
  * @param config - Model configuration
  * @param operation - Async function that receives (model, genAI) and performs the API call
- * @param maxRetries - Maximum number of retries (default: 3, tries each key)
+ * @param maxRetries - Maximum number of retries (default: 12, tries each key)
  * @returns The result of the operation
  */
 export async function withRetry<T>(
     config: GeminiModelConfig | undefined,
     operation: (model: GenerativeModel, genAI: GoogleGenerativeAI) => Promise<T>,
-    maxRetries: number = 3,
+    maxRetries: number = 12,
 ): Promise<T> {
     const keys = getApiKeys();
     if (keys.length === 0) {
@@ -122,7 +117,7 @@ export async function withRetry<T>(
             const genAI = new GoogleGenerativeAI(apiKey);
             const merged = { ...DEFAULT_MODEL_CONFIG, ...config };
             const modelParams: ModelParams = {
-                model: merged.model || 'gemini-2.5-flash',
+                model: merged.model || 'gemini-3.6-flash',
                 generationConfig: merged.generationConfig,
                 ...(merged.systemInstruction ? { systemInstruction: merged.systemInstruction } : {}),
             };
